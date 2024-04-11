@@ -14,8 +14,8 @@ contract ioID is ERC721Upgradeable {
     address public registry;
     address public implementation;
 
-    // projectId => project minted count
-    mapping(uint256 => uint256) public projectMinted;
+    // projectId => project created count
+    mapping(uint256 => uint256) public projectCreated;
     // ioID => projectId
     mapping(uint256 => uint256) public projectId;
 
@@ -42,28 +42,28 @@ contract ioID is ERC721Upgradeable {
         return IERC6551Registry(registry).account(implementation, 0, block.chainid, address(this), _id);
     }
 
-    function mint(uint256 _projectId, address _owner) external returns (uint256) {
+    function create(uint256 _projectId, address _owner) external returns (uint256) {
         require(IProject(project).ownerOf(_projectId) == msg.sender, "not project owner");
         // TODO: check project mint privilege
 
-        return _mint(_projectId, _owner);
+        return _create(_projectId, _owner);
     }
 
-    function mint(uint256 _projectId, address[] calldata _owners) external returns (uint256[] memory) {
+    function create(uint256 _projectId, address[] calldata _owners) external returns (uint256[] memory) {
         require(IProject(project).ownerOf(_projectId) == msg.sender, "not project owner");
         // TODO: check project mint privilege
 
         uint256[] memory _ids = new uint256[](_owners.length);
         for (uint i = 0; i < _owners.length; i++) {
-            _ids[i] = _mint(_projectId, _owners[i]);
+            _ids[i] = _create(_projectId, _owners[i]);
         }
 
         return _ids;
     }
 
-    function _mint(uint256 _projectId, address _owner) internal returns (uint256 id_) {
+    function _create(uint256 _projectId, address _owner) internal returns (uint256 id_) {
         id_ = ++nextId;
-        projectMinted[_projectId] += 1;
+        projectCreated[_projectId] += 1;
         projectId[id_] = _projectId;
         _mint(_owner, id_);
         emit IDCreated(_projectId, _owner, id_);
