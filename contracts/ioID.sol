@@ -6,6 +6,9 @@ import {IProject} from "./interfaces/IProject.sol";
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
 
 contract ioID is ERC721Upgradeable {
+    event IDCreated(uint256 indexed projectId, address indexed owner, uint256 id);
+    event WalletCreated(uint256 indexed id, address indexed wallet);
+
     uint256 nextId;
     address public project;
     address public registry;
@@ -29,9 +32,10 @@ contract ioID is ERC721Upgradeable {
         implementation = _implementation;
     }
 
-    function createWallet(uint256 _id) external returns (address) {
+    function createWallet(uint256 _id) external returns (address wallet_) {
         _requireMinted(_id);
-        return IERC6551Registry(registry).createAccount(implementation, 0, block.chainid, address(this), _id);
+        wallet_ = IERC6551Registry(registry).createAccount(implementation, 0, block.chainid, address(this), _id);
+        emit WalletCreated(_id, wallet_);
     }
 
     function wallet(uint256 _id) external view returns (address) {
@@ -62,5 +66,6 @@ contract ioID is ERC721Upgradeable {
         projectMinted[_projectId] += 1;
         projectId[id_] = _projectId;
         _mint(_owner, id_);
+        emit IDCreated(_projectId, _owner, id_);
     }
 }
