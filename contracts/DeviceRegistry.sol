@@ -16,7 +16,7 @@ contract DeviceRegistry is Initializable {
 
     bytes32 public constant EIP712DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 public immutable DOMAIN_SEPARATOR;
+    bytes32 public DOMAIN_SEPARATOR;
     bytes32 internal constant PERMIT_TYPE_HASH = keccak256("Permit(address owner,uint256 nonce)");
 
     string public constant METHOD = "did:io:";
@@ -35,7 +35,7 @@ contract DeviceRegistry is Initializable {
         _;
     }
 
-    constructor() {
+    function initialize(address _deviceNFT) public initializer {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
@@ -45,9 +45,6 @@ contract DeviceRegistry is Initializable {
                 address(this)
             )
         );
-    }
-
-    function initialize(address _deviceNFT) public initializer {
         deviceNFT = _deviceNFT;
     }
 
