@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./interfaces/IDeviceNFT.sol";
+import {IDeviceNFT} from "./interfaces/IDeviceNFT.sol";
 
 contract DeviceRegistry is Initializable {
     using Counters for Counters.Counter;
@@ -16,6 +16,7 @@ contract DeviceRegistry is Initializable {
 
     bytes32 public constant EIP712DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    // solhint-disable var-name-mixedcase
     bytes32 public DOMAIN_SEPARATOR;
     bytes32 internal constant PERMIT_TYPE_HASH = keccak256("Permit(address owner,uint256 nonce)");
 
@@ -28,6 +29,7 @@ contract DeviceRegistry is Initializable {
     }
 
     mapping(address => Record) private records;
+    mapping(address => uint256) private ids;
     address public deviceNFT;
 
     modifier deviceExists(address owner) {
@@ -62,7 +64,8 @@ contract DeviceRegistry is Initializable {
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
         _setRecord(device, hash, uri);
-        IDeviceNFT(deviceNFT).mint(documentID(device), msg.sender);
+        uint256 _id = IDeviceNFT(deviceNFT).mint(device, msg.sender);
+        ids[device] = _id;
         emit NewDevice(device, msg.sender, hash);
     }
 
@@ -87,6 +90,7 @@ contract DeviceRegistry is Initializable {
         emit UpdateDevice(device, msg.sender, hash);
     }
 
+    // TODO: disable remove api?
     function remove(address device, uint8 v, bytes32 r, bytes32 s) external deviceExists(device) {
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -97,8 +101,10 @@ contract DeviceRegistry is Initializable {
         );
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
+        IDeviceNFT(deviceNFT).removeDID(device);
         delete records[device];
-        IDeviceNFT(deviceNFT).removeDID(documentID(device));
+        delete ids[device];
+
         emit RemoveDevice(device, msg.sender);
     }
 
@@ -136,5 +142,9 @@ contract DeviceRegistry is Initializable {
 
     function documentURI(address device) external view deviceExists(device) returns (string memory) {
         return records[device].uri;
+    }
+
+    function deviceTokenId(address device) external view deviceExists(device) returns (uint256) {
+        return ids[device];
     }
 }

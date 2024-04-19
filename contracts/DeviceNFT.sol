@@ -4,6 +4,11 @@ pragma solidity ^0.8.19;
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
 
+interface IDeviceRegistry {
+    function documentID(address device) external pure returns (string memory);
+    function deviceTokenId(address device) external view returns (uint256);
+}
+
 contract DeviceNFT is ERC721Upgradeable {
     event DeviceNFTCreate(address indexed owner, uint256 id, address wallet, string did);
     event MinterSet(address indexed minter);
@@ -14,7 +19,8 @@ contract DeviceNFT is ERC721Upgradeable {
     address public walletRegistry;
     address public walletImplementation;
 
-    mapping(bytes32 => address) _didWallet;
+    mapping(bytes32 => address) _wallets;
+    mapping(uint256 => address) _devices;
 
     function initialize(
         address _minter,
@@ -39,19 +45,23 @@ contract DeviceNFT is ERC721Upgradeable {
         emit MinterSet(_minter);
     }
 
-    function wallet(uint256 _id) external view returns (address) {
-        return IERC6551Registry(walletRegistry).account(walletImplementation, 0, block.chainid, address(this), _id);
+    function wallet(uint256 _id) external view returns (address wallet_, string memory did_) {
+        wallet_ = IERC6551Registry(walletRegistry).account(walletImplementation, 0, block.chainid, address(this), _id);
+        address _device = _devices[_id];
+        if (_device != address(0)) {
+            did_ = IDeviceRegistry(minter).documentID(_device);
+        }
     }
 
     function wallet(string calldata _did) external view returns (address) {
-        return _didWallet[keccak256(abi.encodePacked(_did))];
+        return _wallets[keccak256(abi.encodePacked(_did))];
     }
 
-    function mint(string calldata _did, address _owner) external returns (uint256) {
-        return _mint(_did, _owner);
+    function mint(address _device, address _owner) external returns (uint256) {
+        return _mint(_device, _owner);
     }
 
-    function _mint(string calldata _did, address _owner) internal returns (uint256 id_) {
+    function _mint(address _device, address _owner) internal returns (uint256 id_) {
         require(minter == msg.sender, "invalid minter");
 
         id_ = ++nextId;
@@ -64,16 +74,23 @@ contract DeviceNFT is ERC721Upgradeable {
             address(this),
             id_
         );
-        _didWallet[keccak256(abi.encodePacked(_did))] = _wallet;
+        string memory _did = IDeviceRegistry(minter).documentID(_device);
+        _wallets[keccak256(abi.encodePacked(_did))] = _wallet;
+        _devices[id_] = _device;
         emit DeviceNFTCreate(_owner, id_, _wallet, _did);
     }
 
-    function removeDID(string calldata _did) external {
+    function removeDID(address _device) external {
         require(minter == msg.sender, "invalid minter");
 
-        address _wallet = _didWallet[keccak256(abi.encodePacked(_did))];
+        IDeviceRegistry _registry = IDeviceRegistry(minter);
+        string memory _did = _registry.documentID(_device);
+
+        address _wallet = _wallets[keccak256(abi.encodePacked(_did))];
         require(_wallet != address(0), "wallet not exist");
-        delete _didWallet[keccak256(abi.encodePacked(_did))];
+        delete _wallets[keccak256(abi.encodePacked(_did))];
+        uint256 _id = _registry.deviceTokenId(_device);
+        delete _devices[_id];
 
         emit DIDWalletRemove(_wallet, _did);
     }

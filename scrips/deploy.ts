@@ -20,16 +20,19 @@ async function main() {
       initializer: 'initialize',
     },
   );
+  await deviceNFT.waitForDeployment();
   console.log(`DeviceNFT deployed to ${deviceNFT.target}`);
 
   const DeviceRegistry = await ethers.getContractFactory('DeviceRegistry');
   const deviceRegistry = await upgrades.deployProxy(DeviceRegistry, [deviceNFT.target], {
     initializer: 'initialize',
   });
+  await deviceRegistry.waitForDeployment();
   console.log(`DeviceRegistry deployed to ${deviceRegistry.target}`);
 
   console.log(`Set DeviceNFT minter to ${deviceRegistry.target}`);
-  await deviceNFT.setMinter(deviceRegistry.target);
+  const tx = await deviceNFT.setMinter(deviceRegistry.target);
+  await tx.wait();
 }
 
 main().catch(err => {
