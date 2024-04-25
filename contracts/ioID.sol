@@ -4,13 +4,10 @@ pragma solidity ^0.8.19;
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
 
-interface IDeviceRegistry {
-    function documentID(address device) external pure returns (string memory);
-    function deviceTokenId(address device) external view returns (uint256);
-}
+import {IioIDRegistry} from "./interfaces/IioIDRegistry.sol";
 
-contract DeviceNFT is ERC721Upgradeable {
-    event DeviceNFTCreate(address indexed owner, uint256 id, address wallet, string did);
+contract ioID is ERC721Upgradeable {
+    event ioIDCreate(address indexed owner, uint256 id, address wallet, string did);
     event MinterSet(address indexed minter);
     event DIDWalletRemove(address indexed wallet, string did);
 
@@ -49,7 +46,7 @@ contract DeviceNFT is ERC721Upgradeable {
         wallet_ = IERC6551Registry(walletRegistry).account(walletImplementation, 0, block.chainid, address(this), _id);
         address _device = _devices[_id];
         if (_device != address(0)) {
-            did_ = IDeviceRegistry(minter).documentID(_device);
+            did_ = IioIDRegistry(minter).documentID(_device);
         }
     }
 
@@ -74,16 +71,16 @@ contract DeviceNFT is ERC721Upgradeable {
             address(this),
             id_
         );
-        string memory _did = IDeviceRegistry(minter).documentID(_device);
+        string memory _did = IioIDRegistry(minter).documentID(_device);
         _wallets[keccak256(abi.encodePacked(_did))] = _wallet;
         _devices[id_] = _device;
-        emit DeviceNFTCreate(_owner, id_, _wallet, _did);
+        emit ioIDCreate(_owner, id_, _wallet, _did);
     }
 
     function removeDID(address _device) external {
         require(minter == msg.sender, "invalid minter");
 
-        IDeviceRegistry _registry = IDeviceRegistry(minter);
+        IioIDRegistry _registry = IioIDRegistry(minter);
         string memory _did = _registry.documentID(_device);
 
         address _wallet = _wallets[keccak256(abi.encodePacked(_did))];

@@ -1,40 +1,40 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { DeviceNFT, DeviceRegistry } from '../typechain-types';
+import { IoID, IoIDRegistry } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { keccak256 } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
 
 describe('ioID tests', function () {
   let deployer, owner: HardhatEthersSigner;
-  let deviceNFT: DeviceNFT;
-  let deviceRegistry: DeviceRegistry;
+  let idID: IoID;
+  let ioIDRegistry: IoIDRegistry;
 
   before(async () => {
     [deployer, owner] = await ethers.getSigners();
 
-    deviceNFT = await ethers.deployContract('DeviceNFT');
-    await deviceNFT.initialize(
+    idID = await ethers.deployContract('ioID');
+    await idID.initialize(
       deployer.address, // minter
       '0x000000006551c19487814612e58FE06813775758', // wallet registry
       '0x1d1C779932271e9Dc683d5373E84Fa4239F2b3fb', // wallet implementation
-      'ioID device NFT',
-      'IDN',
+      'ioID',
+      'ioID',
     );
 
-    deviceRegistry = await ethers.deployContract('DeviceRegistry');
-    await deviceRegistry.initialize(deviceNFT.target);
+    ioIDRegistry = await ethers.deployContract('ioIDRegistry');
+    await ioIDRegistry.initialize(idID.target);
 
-    await deviceNFT.setMinter(deviceRegistry.target);
+    await idID.setMinter(ioIDRegistry.target);
   });
 
   it('regsiter', async () => {
     const device = ethers.Wallet.createRandom();
     const domain = {
-      name: 'DeviceRegistry',
+      name: 'ioIDRegistry',
       version: '1',
       chainId: 4690,
-      verifyingContract: deviceRegistry.target,
+      verifyingContract: ioIDRegistry.target,
     };
     const types = {
       Permit: [
@@ -43,17 +43,17 @@ describe('ioID tests', function () {
       ],
     };
 
-    const nonce = await deviceRegistry.nonces(device.address);
+    const nonce = await ioIDRegistry.nonces(device.address);
     // @ts-ignore
     const signature = await device.signTypedData(domain, types, { owner: owner.address, nonce: nonce });
     const r = signature.substring(0, 66);
     const s = '0x' + signature.substring(66, 130);
     const v = '0x' + signature.substring(130);
 
-    await deviceRegistry.connect(owner).register(device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
-    const did = await deviceRegistry.documentID(device.address);
+    await ioIDRegistry.connect(owner).register(device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
+    const did = await ioIDRegistry.documentID(device.address);
 
-    const wallet = await deviceNFT['wallet(string)'](did);
+    const wallet = await idID['wallet(string)'](did);
     expect((await ethers.provider.getCode(wallet)).length).to.gt(0);
 
     expect(await ethers.provider.getBalance(wallet)).to.equal(0);

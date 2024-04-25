@@ -4,9 +4,10 @@ pragma solidity ^0.8.19;
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {IDeviceNFT} from "./interfaces/IDeviceNFT.sol";
+import {IioID} from "./interfaces/IioID.sol";
+import {IioIDRegistry} from "./interfaces/IioIDRegistry.sol";
 
-contract DeviceRegistry is Initializable {
+contract ioIDRegistry is IioIDRegistry, Initializable {
     using Counters for Counters.Counter;
     using Strings for address;
 
@@ -30,24 +31,24 @@ contract DeviceRegistry is Initializable {
 
     mapping(address => Record) private records;
     mapping(address => uint256) private ids;
-    address public deviceNFT;
+    address public ioID;
 
     modifier deviceExists(address owner) {
         require(records[owner].hash != bytes32(0), "device not exists");
         _;
     }
 
-    function initialize(address _deviceNFT) public initializer {
+    function initialize(address _ioID) public initializer {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
-                keccak256(bytes("DeviceRegistry")),
+                keccak256(bytes("ioIDRegistry")),
                 keccak256(bytes("1")),
                 block.chainid,
                 address(this)
             )
         );
-        deviceNFT = _deviceNFT;
+        ioID = _ioID;
     }
 
     function register(address device, bytes32 hash, string calldata uri, uint8 v, bytes32 r, bytes32 s) external {
@@ -64,7 +65,7 @@ contract DeviceRegistry is Initializable {
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
         _setRecord(device, hash, uri);
-        uint256 _id = IDeviceNFT(deviceNFT).mint(device, msg.sender);
+        uint256 _id = IioID(ioID).mint(device, msg.sender);
         ids[device] = _id;
         emit NewDevice(device, msg.sender, hash);
     }
@@ -101,7 +102,7 @@ contract DeviceRegistry is Initializable {
         );
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
-        IDeviceNFT(deviceNFT).removeDID(device);
+        IioID(ioID).removeDID(device);
         delete records[device];
         delete ids[device];
 
