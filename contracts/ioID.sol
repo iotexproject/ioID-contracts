@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import {ERC721Upgradeable, ERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
 
 import {IioIDRegistry} from "./interfaces/IioIDRegistry.sol";
 
-contract ioID is ERC721Upgradeable {
+contract ioID is ERC721EnumerableUpgradeable {
     event ioIDCreate(address indexed owner, uint256 id, address wallet, string did);
     event MinterSet(address indexed minter);
     event DIDWalletRemove(address indexed wallet, string did);
@@ -27,6 +27,7 @@ contract ioID is ERC721Upgradeable {
         string calldata _symbol
     ) public initializer {
         __ERC721_init(_name, _symbol);
+        __ERC721Enumerable_init();
         minter = _minter;
         walletRegistry = _walletRegistry;
         walletImplementation = _walletImplementation;
