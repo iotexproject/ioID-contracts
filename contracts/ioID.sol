@@ -3,18 +3,20 @@ pragma solidity ^0.8.19;
 
 import {ERC721Upgradeable, ERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
+import "./interfaces/IioID.sol";
+import "./interfaces/IioIDRegistry.sol";
+import "./interfaces/IioIDFactory.sol";
 
-import {IioIDRegistry} from "./interfaces/IioIDRegistry.sol";
-
-contract ioID is ERC721EnumerableUpgradeable {
-    event ioIDCreate(address indexed owner, uint256 id, address wallet, string did);
-    event MinterSet(address indexed minter);
-    event DIDWalletRemove(address indexed wallet, string did);
+contract ioID is IioID, ERC721EnumerableUpgradeable {
+    event CreateIoID(address indexed owner, uint256 id, address wallet, string did);
+    event SetMinter(address indexed minter);
+    event RemoveDIDWallet(address indexed wallet, string did);
 
     uint256 nextId;
     address public minter;
     address public walletRegistry;
     address public walletImplementation;
+    address public ioIDFactory;
 
     mapping(bytes32 => address) _wallets;
     mapping(uint256 => address) _devices;
@@ -28,19 +30,19 @@ contract ioID is ERC721EnumerableUpgradeable {
     ) public initializer {
         __ERC721_init(_name, _symbol);
         __ERC721Enumerable_init();
+
         minter = _minter;
         walletRegistry = _walletRegistry;
         walletImplementation = _walletImplementation;
-
-        emit MinterSet(_minter);
+        emit SetMinter(_minter);
     }
 
     function setMinter(address _minter) external {
         require(_minter != address(0), "zero minter");
         require(minter == msg.sender, "invalid minter");
-        minter = _minter;
 
-        emit MinterSet(_minter);
+        minter = _minter;
+        emit SetMinter(_minter);
     }
 
     function wallet(uint256 _id) external view returns (address wallet_, string memory did_) {
@@ -55,11 +57,11 @@ contract ioID is ERC721EnumerableUpgradeable {
         return _wallets[keccak256(abi.encodePacked(_did))];
     }
 
-    function mint(address _device, address _owner) external returns (uint256) {
-        return _mint(_device, _owner);
+    function mint(uint256 _projectId, address _device, address _owner) external override returns (uint256) {
+        return _mint(_projectId, _device, _owner);
     }
 
-    function _mint(address _device, address _owner) internal returns (uint256 id_) {
+    function _mint(uint256 _projectId, address _device, address _owner) internal returns (uint256 id_) {
         require(minter == msg.sender, "invalid minter");
 
         id_ = ++nextId;
@@ -75,7 +77,7 @@ contract ioID is ERC721EnumerableUpgradeable {
         string memory _did = IioIDRegistry(minter).documentID(_device);
         _wallets[keccak256(abi.encodePacked(_did))] = _wallet;
         _devices[id_] = _device;
-        emit ioIDCreate(_owner, id_, _wallet, _did);
+        emit CreateIoID(_owner, id_, _wallet, _did);
     }
 
     function removeDID(address _device) external {
@@ -90,6 +92,6 @@ contract ioID is ERC721EnumerableUpgradeable {
         uint256 _id = _registry.deviceTokenId(_device);
         delete _devices[_id];
 
-        emit DIDWalletRemove(_wallet, _did);
+        emit RemoveDIDWallet(_wallet, _did);
     }
 }

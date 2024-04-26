@@ -6,10 +6,10 @@ import "./interfaces/IProject.sol";
 import "./interfaces/IioIDFactory.sol";
 
 contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
-    event SetIoID(address indexed ioID);
+    event SetIoIDRegistry(address indexed ioIDRegistry);
 
     address public project;
-    address public ioID;
+    address public ioIDRegistry;
     uint256 public override price;
     mapping(uint256 => address) public override projectPresaleContract;
     mapping(address => uint256) public override presaleContractProject;
@@ -41,7 +41,7 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
     }
 
     function activeIoID(uint256 projectId) external override {
-        require(ioID == msg.sender, "only ioID");
+        require(ioIDRegistry == msg.sender, "only ioID");
         require(projectAppliedAmount[projectId] > 0, "insufficient ioID");
 
         unchecked {
@@ -55,8 +55,17 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
         emit ChangePrice(_price);
     }
 
-    function setIoID(address _ioID) external onlyOwner {
-        ioID = _ioID;
-        emit SetIoID(_ioID);
+    function setIoIDRegistry(address _ioIDRegistry) external onlyOwner {
+        ioIDRegistry = _ioIDRegistry;
+        emit SetIoIDRegistry(_ioIDRegistry);
+    }
+
+    function withdraw(address[] calldata _recipicents, uint256[] calldata _amounts) external onlyOwner {
+        require(_recipicents.length == _amounts.length, "invalid request");
+
+        for (uint i = 0; i < _recipicents.length; i++) {
+            (bool success, ) = _recipicents[i].call{value: _amounts[i]}("");
+            require(success, "transfer fail");
+        }
     }
 }

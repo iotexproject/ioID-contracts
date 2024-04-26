@@ -4,8 +4,10 @@ pragma solidity ^0.8.19;
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IioID} from "./interfaces/IioID.sol";
 import {IioIDRegistry} from "./interfaces/IioIDRegistry.sol";
+import {IioIDFactory} from "./interfaces/IioIDFactory.sol";
 
 contract ioIDRegistry is IioIDRegistry, Initializable {
     using Counters for Counters.Counter;
@@ -14,6 +16,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     event NewDevice(address indexed device, address owner, bytes32 hash);
     event UpdateDevice(address indexed device, address owner, bytes32 hash);
     event RemoveDevice(address indexed device, address owner);
+    event SetIoIdFactory(address indexed factory);
 
     bytes32 public constant EIP712DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -31,6 +34,8 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
 
     mapping(address => Record) private records;
     mapping(address => uint256) private ids;
+    mapping(address => mapping(uint256 => bool)) public override registeredNFT;
+    address public ioIDFactory;
     address public ioID;
 
     modifier deviceExists(address owner) {
@@ -38,7 +43,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         _;
     }
 
-    function initialize(address _ioID) public initializer {
+    function initialize(address _ioIDFactory, address _ioID) public initializer {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
@@ -48,12 +53,37 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
                 address(this)
             )
         );
+        ioIDFactory = _ioIDFactory;
         ioID = _ioID;
     }
 
-    function register(address device, bytes32 hash, string calldata uri, uint8 v, bytes32 r, bytes32 s) external {
+    function setIoIDFactory(address _ioIDFactory) external {
+        require(_ioIDFactory != address(0), "zero address");
+        require(ioIDFactory == msg.sender, "invalid factory");
+
+        ioIDFactory = _ioIDFactory;
+        emit SetIoIdFactory(_ioIDFactory);
+    }
+
+    function register(
+        address presaleContract,
+        uint256 tokenId,
+        address device,
+        bytes32 hash,
+        string calldata uri,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external override {
         require(device != address(0), "device is the zero address");
+        require(!registeredNFT[presaleContract][tokenId], "nft already used");
+        require(IERC721(presaleContract).ownerOf(tokenId) == msg.sender, "invalid presale nft owner");
         require(records[device].hash == bytes32(0), "device exists");
+
+        IioIDFactory _factory = IioIDFactory(ioIDFactory);
+        uint256 _projectId = _factory.presaleContractProject(presaleContract);
+        require(_projectId != 0, "invalid project");
+        _factory.activeIoID(_projectId);
 
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -65,8 +95,9 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
         _setRecord(device, hash, uri);
-        uint256 _id = IioID(ioID).mint(device, msg.sender);
+        uint256 _id = IioID(ioID).mint(_projectId, device, msg.sender);
         ids[device] = _id;
+        registeredNFT[presaleContract][tokenId] = true;
         emit NewDevice(device, msg.sender, hash);
     }
 
