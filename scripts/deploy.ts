@@ -2,7 +2,7 @@ import { ethers, upgrades } from 'hardhat';
 
 async function main() {
   if (!process.env.PROJECT) {
-    console.log(`Please provide wallet registry address`);
+    console.log(`Please provide project address`);
     return;
   }
   if (!process.env.WALLET_REGISTRY) {
