@@ -21,11 +21,12 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
 
         project = _project;
         price = 1000 ether;
+        ioIDRegistry = msg.sender;
         emit ChangePrice(price);
     }
 
     function applyIoID(uint256 projectId, address presaleNFT, uint256 amount) external payable override {
-        require(amount * price >= msg.value, "insufficient fund");
+        require(msg.value >= amount * price, "insufficient fund");
         require(IProject(project).ownerOf(projectId) == msg.sender, "invald project owner");
         require(presaleNFT != address(0), "zero address");
         if (projectPresaleContract[projectId] != address(0)) {
@@ -41,7 +42,7 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
     }
 
     function activeIoID(uint256 projectId) external override {
-        require(ioIDRegistry == msg.sender, "only ioID");
+        require(ioIDRegistry == msg.sender, "only ioIDRegistry");
         require(projectAppliedAmount[projectId] > 0, "insufficient ioID");
 
         unchecked {
@@ -55,7 +56,7 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
         emit ChangePrice(_price);
     }
 
-    function setIoIDRegistry(address _ioIDRegistry) external onlyOwner {
+    function setIoIDRegistry(address _ioIDRegistry) public onlyOwner {
         ioIDRegistry = _ioIDRegistry;
         emit SetIoIDRegistry(_ioIDRegistry);
     }

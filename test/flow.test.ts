@@ -1,17 +1,50 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { IoID, IoIDRegistry } from '../typechain-types';
+import { IoID, IoIDFactory, IoIDRegistry, PresaleNFT } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { keccak256 } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
 
 describe('ioID tests', function () {
-  let deployer, owner: HardhatEthersSigner;
+  let deployer, projectOwner, owner: HardhatEthersSigner;
+  let ioIDFactory: IoIDFactory;
   let idID: IoID;
   let ioIDRegistry: IoIDRegistry;
+  let projectId: bigint;
+  let presaleNFT: PresaleNFT;
+  let presaleNFTId: bigint;
 
   before(async () => {
-    [deployer, owner] = await ethers.getSigners();
+    [deployer, projectOwner, owner] = await ethers.getSigners();
+
+    const projectRegistrar = await ethers.getContractAt(
+      'IProjectRegistrar',
+      '0xF6BF9f1E7ec17b72Defbd90874359fbb513DeD38',
+    );
+    const fee = await projectRegistrar.registrationFee();
+    const tx = await projectRegistrar.connect(projectOwner).register({ value: fee });
+    const receipt = await tx.wait();
+    for (let i = 0; i < receipt!.logs.length; i++) {
+      const log = receipt!.logs[i];
+      if (
+        log.address === '0xe2267bC7fF61371d0Ad85f5A8e44063786266495' &&
+        log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+      ) {
+        projectId = BigInt(log.topics[3]);
+      }
+    }
+
+    presaleNFT = await ethers.deployContract('PresaleNFT');
+    await presaleNFT.configureMinter(deployer, 100);
+    presaleNFT.mint(owner.address);
+    presaleNFTId = 1n;
+
+    ioIDFactory = await ethers.deployContract('ioIDFactory');
+    await ioIDFactory.initialize('0xe2267bC7fF61371d0Ad85f5A8e44063786266495');
+    await ioIDFactory.changePrice(ethers.parseEther('1.0'));
+    await ioIDFactory
+      .connect(projectOwner)
+      .applyIoID(projectId, presaleNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
 
     idID = await ethers.deployContract('ioID');
     await idID.initialize(
@@ -23,8 +56,9 @@ describe('ioID tests', function () {
     );
 
     ioIDRegistry = await ethers.deployContract('ioIDRegistry');
-    await ioIDRegistry.initialize(idID.target);
+    await ioIDRegistry.initialize(ioIDFactory.target, idID.target);
 
+    await ioIDFactory.setIoIDRegistry(ioIDRegistry.target);
     await idID.setMinter(ioIDRegistry.target);
   });
 
@@ -44,13 +78,16 @@ describe('ioID tests', function () {
     };
 
     const nonce = await ioIDRegistry.nonces(device.address);
+
     // @ts-ignore
     const signature = await device.signTypedData(domain, types, { owner: owner.address, nonce: nonce });
     const r = signature.substring(0, 66);
     const s = '0x' + signature.substring(66, 130);
     const v = '0x' + signature.substring(130);
 
-    await ioIDRegistry.connect(owner).register(device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
+    await ioIDRegistry
+      .connect(owner)
+      .register(presaleNFT.target, presaleNFTId, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
     const did = await ioIDRegistry.documentID(device.address);
 
     const wallet = await idID['wallet(string)'](did);
