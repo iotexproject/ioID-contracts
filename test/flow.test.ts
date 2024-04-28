@@ -8,7 +8,7 @@ import { TokenboundClient } from '@tokenbound/sdk';
 describe('ioID tests', function () {
   let deployer, projectOwner, owner: HardhatEthersSigner;
   let ioIDFactory: IoIDFactory;
-  let idID: IoID;
+  let ioID: IoID;
   let ioIDRegistry: IoIDRegistry;
   let projectId: bigint;
   let presaleNFT: PresaleNFT;
@@ -46,8 +46,8 @@ describe('ioID tests', function () {
       .connect(projectOwner)
       .applyIoID(projectId, presaleNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
 
-    idID = await ethers.deployContract('ioID');
-    await idID.initialize(
+    ioID = await ethers.deployContract('ioID');
+    await ioID.initialize(
       deployer.address, // minter
       '0x000000006551c19487814612e58FE06813775758', // wallet registry
       '0x1d1C779932271e9Dc683d5373E84Fa4239F2b3fb', // wallet implementation
@@ -56,10 +56,10 @@ describe('ioID tests', function () {
     );
 
     ioIDRegistry = await ethers.deployContract('ioIDRegistry');
-    await ioIDRegistry.initialize(ioIDFactory.target, idID.target);
+    await ioIDRegistry.initialize(ioIDFactory.target, ioID.target);
 
     await ioIDFactory.setIoIDRegistry(ioIDRegistry.target);
-    await idID.setMinter(ioIDRegistry.target);
+    await ioID.setMinter(ioIDRegistry.target);
   });
 
   it('regsiter', async () => {
@@ -90,7 +90,7 @@ describe('ioID tests', function () {
       .register(presaleNFT.target, presaleNFTId, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
     const did = await ioIDRegistry.documentID(device.address);
 
-    const wallet = await idID['wallet(string)'](did);
+    const wallet = await ioID['wallet(string)'](did);
     expect((await ethers.provider.getCode(wallet)).length).to.gt(0);
 
     expect(await ethers.provider.getBalance(wallet)).to.equal(0);

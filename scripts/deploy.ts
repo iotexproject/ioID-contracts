@@ -1,6 +1,10 @@
 import { ethers, upgrades } from 'hardhat';
 
 async function main() {
+  if (!process.env.PROJECT) {
+    console.log(`Please provide wallet registry address`);
+    return;
+  }
   if (!process.env.WALLET_REGISTRY) {
     console.log(`Please provide wallet registry address`);
     return;
@@ -12,26 +16,41 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  const DeviceNFT = await ethers.getContractFactory('DeviceNFT');
-  const deviceNFT = await upgrades.deployProxy(
-    DeviceNFT,
+  const ioIDFactory = await upgrades.deployProxy(
+    await ethers.getContractFactory('ioIDFactory'),
+    [process.env.PROJECT],
+    {
+      initializer: 'initialize',
+    },
+  );
+  await ioIDFactory.waitForDeployment();
+  console.log(`ioIDFactory deployed to ${ioIDFactory.target}`);
+
+  const ioID = await upgrades.deployProxy(
+    await ethers.getContractFactory('ioID'),
     [deployer.address, process.env.WALLET_REGISTRY, process.env.WALLET_IMPLEMENTATION, 'ioID device NFT', 'IDN'],
     {
       initializer: 'initialize',
     },
   );
-  await deviceNFT.waitForDeployment();
-  console.log(`DeviceNFT deployed to ${deviceNFT.target}`);
+  await ioID.waitForDeployment();
+  console.log(`ioID deployed to ${ioID.target}`);
 
-  const DeviceRegistry = await ethers.getContractFactory('DeviceRegistry');
-  const deviceRegistry = await upgrades.deployProxy(DeviceRegistry, [deviceNFT.target], {
-    initializer: 'initialize',
-  });
-  await deviceRegistry.waitForDeployment();
-  console.log(`DeviceRegistry deployed to ${deviceRegistry.target}`);
+  const ioIDRegistry = await upgrades.deployProxy(
+    await ethers.getContractFactory('ioIDRegistry'),
+    [ioIDFactory.target, ioID.target],
+    {
+      initializer: 'initialize',
+    },
+  );
+  console.log(`ioIDRegistry deployed to ${ioIDRegistry.target}`);
 
-  console.log(`Set DeviceNFT minter to ${deviceRegistry.target}`);
-  const tx = await deviceNFT.setMinter(deviceRegistry.target);
+  console.log(`Set ioIDFactory ioIDRegistry to ${ioIDRegistry.target}`);
+  let tx = await ioIDFactory.setIoIDRegistry(ioIDRegistry.target);
+  await tx.wait();
+
+  console.log(`Set ioID minter to ${ioIDRegistry.target}`);
+  tx = await ioID.setMinter(ioIDRegistry.target);
   await tx.wait();
 }
 
