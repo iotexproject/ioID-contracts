@@ -18,22 +18,19 @@ async function main() {
   let projectId;
   for (let i = 0; i < receipt!.logs.length; i++) {
     const log = receipt!.logs[i];
-    if (
-      log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-    ) {
+    if (log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') {
       projectId = BigInt(log.topics[3]);
     }
   }
 
-  const presaleNFT = await ethers.deployContract('PresaleNFT');
-  await presaleNFT.waitForDeployment();
-  tx = await presaleNFT.configureMinter(deployer, 100);
+  const deviceNFT = await ethers.deployContract('DeviceNFT');
+  await deviceNFT.waitForDeployment();
+  tx = await deviceNFT.configureMinter(deployer, 100);
   await tx.wait();
-  console.log(`PresaleNFT deployed to ${presaleNFT.target}`);
+  console.log(`DeviceNFT deployed to ${deviceNFT.target}`);
 
   const ioIDFactory = await ethers.getContractAt('ioIDFactory', process.env.IOID_FACTORY);
-  await ioIDFactory
-      .applyIoID(projectId, presaleNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
+  await ioIDFactory.applyIoID(projectId, deviceNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
 }
 
 main().catch(err => {
