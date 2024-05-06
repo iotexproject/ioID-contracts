@@ -66,7 +66,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     }
 
     function register(
-        address presaleContract,
+        address deviceNFTContract,
         uint256 tokenId,
         address device,
         bytes32 hash,
@@ -76,12 +76,12 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         bytes32 s
     ) external override {
         require(device != address(0), "device is the zero address");
-        require(!registeredNFT[presaleContract][tokenId], "nft already used");
-        require(IERC721(presaleContract).ownerOf(tokenId) == msg.sender, "invalid presale nft owner");
+        require(!registeredNFT[deviceNFTContract][tokenId], "nft already used");
+        require(IERC721(deviceNFTContract).ownerOf(tokenId) == msg.sender, "invalid device nft owner");
         require(records[device].hash == bytes32(0), "device exists");
 
         IioIDFactory _factory = IioIDFactory(ioIDFactory);
-        uint256 _projectId = _factory.presaleContractProject(presaleContract);
+        uint256 _projectId = _factory.deviceNFTContractProject(deviceNFTContract);
         require(_projectId != 0, "invalid project");
         _factory.activeIoID(_projectId);
 
@@ -97,7 +97,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         _setRecord(device, hash, uri);
         uint256 _id = IioID(ioID).mint(_projectId, device, msg.sender);
         ids[device] = _id;
-        registeredNFT[presaleContract][tokenId] = true;
+        registeredNFT[deviceNFTContract][tokenId] = true;
         emit NewDevice(device, msg.sender, hash);
     }
 

@@ -8,7 +8,7 @@ interface IioIDRegistry {
     function registeredNFT(address presaleContract, uint256 tokenId) external view returns (bool);
 
     function register(
-        address presaleContract,
+        address deviceNFTContract,
         uint256 tokenId,
         address device,
         bytes32 hash,

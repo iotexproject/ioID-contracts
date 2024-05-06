@@ -11,8 +11,8 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
     address public project;
     address public ioIDRegistry;
     uint256 public override price;
-    mapping(uint256 => address) public override projectPresaleContract;
-    mapping(address => uint256) public override presaleContractProject;
+    mapping(uint256 => address) public override projectDeviceNFTContract;
+    mapping(address => uint256) public override deviceNFTContractProject;
     mapping(uint256 => uint256) public override projectAppliedAmount;
     mapping(uint256 => uint256) public override projectActivedAmount;
 
@@ -25,20 +25,20 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
         emit ChangePrice(price);
     }
 
-    function applyIoID(uint256 projectId, address presaleNFT, uint256 amount) external payable override {
+    function applyIoID(uint256 projectId, address deviceNFT, uint256 amount) external payable override {
         require(msg.value >= amount * price, "insufficient fund");
         require(IProject(project).ownerOf(projectId) == msg.sender, "invald project owner");
-        require(presaleNFT != address(0), "zero address");
-        if (projectPresaleContract[projectId] != address(0)) {
-            presaleNFT = projectPresaleContract[projectId];
+        require(deviceNFT != address(0), "zero address");
+        if (projectDeviceNFTContract[projectId] != address(0)) {
+            deviceNFT = projectDeviceNFTContract[projectId];
         } else {
-            projectPresaleContract[projectId] = presaleNFT;
-            presaleContractProject[presaleNFT] = projectId;
+            projectDeviceNFTContract[projectId] = deviceNFT;
+            deviceNFTContractProject[deviceNFT] = projectId;
         }
         unchecked {
             projectAppliedAmount[projectId] += amount;
         }
-        emit ApplyIoID(projectId, presaleNFT, amount);
+        emit ApplyIoID(projectId, deviceNFT, amount);
     }
 
     function activeIoID(uint256 projectId) external override {
