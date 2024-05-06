@@ -43,10 +43,10 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
 
     function activeIoID(uint256 projectId) external override {
         require(ioIDRegistry == msg.sender, "only ioIDRegistry");
-        require(projectAppliedAmount[projectId] > 0, "insufficient ioID");
+        require(projectAppliedAmount[projectId] > projectActivedAmount[projectId], "insufficient ioID");
 
         unchecked {
-            projectAppliedAmount[projectId] -= 1;
+            projectActivedAmount[projectId] += 1;
         }
         emit ActiveIoID(projectId);
     }
