@@ -81,7 +81,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         require(records[device].hash == bytes32(0), "device exists");
 
         IioIDFactory _factory = IioIDFactory(ioIDFactory);
-        uint256 _projectId = _factory.deviceNFTContractProject(deviceNFTContract);
+        uint256 _projectId = _factory.nftContractProject(deviceNFTContract);
         require(_projectId != 0, "invalid project");
         _factory.activeIoID(_projectId);
 

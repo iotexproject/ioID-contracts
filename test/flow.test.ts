@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { IoID, IoIDFactory, IoIDRegistry, DeviceNFT } from '../typechain-types';
+import { IoID, IoIDFactory, IoIDRegistry, IDONFT } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { keccak256 } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
@@ -11,8 +11,8 @@ describe('ioID tests', function () {
   let ioID: IoID;
   let ioIDRegistry: IoIDRegistry;
   let projectId: bigint;
-  let deviceNFT: DeviceNFT;
-  let deviceNFTId: bigint;
+  let idoNFT: IDONFT;
+  let idoNFTId: bigint;
 
   before(async () => {
     [deployer, projectOwner, owner] = await ethers.getSigners();
@@ -34,17 +34,17 @@ describe('ioID tests', function () {
       }
     }
 
-    deviceNFT = await ethers.deployContract('DeviceNFT');
-    await deviceNFT.configureMinter(deployer, 100);
-    deviceNFT.mint(owner.address);
-    deviceNFTId = 1n;
+    idoNFT = await ethers.deployContract('IDONFT');
+    await idoNFT.configureMinter(deployer, 100);
+    idoNFT.mint(owner.address);
+    idoNFTId = 1n;
 
     ioIDFactory = await ethers.deployContract('ioIDFactory');
     await ioIDFactory.initialize('0xe2267bC7fF61371d0Ad85f5A8e44063786266495');
     await ioIDFactory.changePrice(ethers.parseEther('1.0'));
     await ioIDFactory
       .connect(projectOwner)
-      .applyIoID(projectId, deviceNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
+      .applyIoID(projectId, idoNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
 
     ioID = await ethers.deployContract('ioID');
     await ioID.initialize(
@@ -87,7 +87,7 @@ describe('ioID tests', function () {
 
     await ioIDRegistry
       .connect(owner)
-      .register(deviceNFT.target, deviceNFTId, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
+      .register(idoNFT.target, idoNFTId, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
     const did = await ioIDRegistry.documentID(device.address);
 
     const wallet = await ioID['wallet(string)'](did);

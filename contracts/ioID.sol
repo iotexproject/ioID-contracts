@@ -61,7 +61,9 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
         return _mint(_projectId, _device, _owner);
     }
 
-    // TODO: add to project device list
+    // TODO: 
+    // 1. add to project device list
+    // 2. remove sprout project NFT to ioID
     function _mint(uint256 _projectId, address _device, address _owner) internal returns (uint256 id_) {
         require(minter == msg.sender, "invalid minter");
 
