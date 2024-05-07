@@ -7,7 +7,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {IioID} from "./interfaces/IioID.sol";
 import {IioIDRegistry} from "./interfaces/IioIDRegistry.sol";
-import {IioIDFactory} from "./interfaces/IioIDFactory.sol";
+import {IioIDStore} from "./interfaces/IioIDStore.sol";
 
 contract ioIDRegistry is IioIDRegistry, Initializable {
     using Counters for Counters.Counter;
@@ -16,7 +16,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     event NewDevice(address indexed device, address owner, bytes32 hash);
     event UpdateDevice(address indexed device, address owner, bytes32 hash);
     event RemoveDevice(address indexed device, address owner);
-    event SetIoIdFactory(address indexed factory);
+    event SetIoIdStore(address indexed store);
 
     bytes32 public constant EIP712DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -35,7 +35,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     mapping(address => Record) private records;
     mapping(address => uint256) private ids;
     mapping(address => mapping(uint256 => bool)) public override registeredNFT;
-    address public ioIDFactory;
+    address public ioIDStore;
     address public ioID;
 
     modifier deviceExists(address owner) {
@@ -43,7 +43,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         _;
     }
 
-    function initialize(address _ioIDFactory, address _ioID) public initializer {
+    function initialize(address _ioIDStore, address _ioID) public initializer {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 EIP712DOMAIN_TYPEHASH,
@@ -53,20 +53,20 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
                 address(this)
             )
         );
-        ioIDFactory = _ioIDFactory;
+        ioIDStore = _ioIDStore;
         ioID = _ioID;
     }
 
-    function setIoIDFactory(address _ioIDFactory) external {
-        require(_ioIDFactory != address(0), "zero address");
-        require(ioIDFactory == msg.sender, "invalid factory");
+    function setIoIDStore(address _ioIDStore) external {
+        require(_ioIDStore != address(0), "zero address");
+        require(ioIDStore == msg.sender, "invalid factory");
 
-        ioIDFactory = _ioIDFactory;
-        emit SetIoIdFactory(_ioIDFactory);
+        ioIDStore = _ioIDStore;
+        emit SetIoIdStore(_ioIDStore);
     }
 
     function register(
-        address deviceNFTContract,
+        address deviceContract,
         uint256 tokenId,
         address device,
         bytes32 hash,
@@ -76,14 +76,14 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         bytes32 s
     ) external override {
         require(device != address(0), "device is the zero address");
-        require(!registeredNFT[deviceNFTContract][tokenId], "nft already used");
-        require(IERC721(deviceNFTContract).ownerOf(tokenId) == msg.sender, "invalid device nft owner");
+        require(!registeredNFT[deviceContract][tokenId], "nft already used");
+        require(IERC721(deviceContract).ownerOf(tokenId) == msg.sender, "invalid device nft owner");
         require(records[device].hash == bytes32(0), "device exists");
 
-        IioIDFactory _factory = IioIDFactory(ioIDFactory);
-        uint256 _projectId = _factory.nftContractProject(deviceNFTContract);
+        IioIDStore _store = IioIDStore(ioIDStore);
+        uint256 _projectId = _store.deviceContractProject(deviceContract);
         require(_projectId != 0, "invalid project");
-        _factory.activeIoID(_projectId);
+        _store.activeIoID(_projectId);
 
         bytes32 digest = keccak256(
             abi.encodePacked(
@@ -97,7 +97,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         _setRecord(device, hash, uri);
         uint256 _id = IioID(ioID).mint(_projectId, device, msg.sender);
         ids[device] = _id;
-        registeredNFT[deviceNFTContract][tokenId] = true;
+        registeredNFT[deviceContract][tokenId] = true;
         emit NewDevice(device, msg.sender, hash);
     }
 

@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { IoID, IoIDFactory, IoIDRegistry, IDONFT } from '../typechain-types';
+import { IoID, IoIDStore, IoIDRegistry, IDONFT } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { keccak256 } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
 
 describe('ioID tests', function () {
   let deployer, projectOwner, owner: HardhatEthersSigner;
-  let ioIDFactory: IoIDFactory;
+  let ioIDStore: IoIDStore;
   let ioID: IoID;
   let ioIDRegistry: IoIDRegistry;
   let projectId: bigint;
@@ -17,17 +17,17 @@ describe('ioID tests', function () {
   before(async () => {
     [deployer, projectOwner, owner] = await ethers.getSigners();
 
-    const projectRegistrar = await ethers.getContractAt(
-      'IProjectRegistrar',
-      '0xF6BF9f1E7ec17b72Defbd90874359fbb513DeD38',
-    );
-    const fee = await projectRegistrar.registrationFee();
-    const tx = await projectRegistrar.connect(projectOwner).register({ value: fee });
+    const project = await ethers.deployContract('Project');
+    await project.initialize('ioID Project', 'IPN');
+    const projectRegistry = await ethers.deployContract('ProjectRegistry');
+    await projectRegistry.initialize(project.target);
+    await project.setMinter(projectRegistry.target);
+
+    const tx = await projectRegistry.connect(projectOwner).register();
     const receipt = await tx.wait();
     for (let i = 0; i < receipt!.logs.length; i++) {
       const log = receipt!.logs[i];
       if (
-        log.address === '0xe2267bC7fF61371d0Ad85f5A8e44063786266495' &&
         log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
       ) {
         projectId = BigInt(log.topics[3]);
@@ -39,12 +39,12 @@ describe('ioID tests', function () {
     idoNFT.mint(owner.address);
     idoNFTId = 1n;
 
-    ioIDFactory = await ethers.deployContract('ioIDFactory');
-    await ioIDFactory.initialize('0xe2267bC7fF61371d0Ad85f5A8e44063786266495');
-    await ioIDFactory.changePrice(ethers.parseEther('1.0'));
-    await ioIDFactory
+    ioIDStore = await ethers.deployContract('ioIDStore');
+    await ioIDStore.initialize(project.target);
+    await ioIDStore.changePrice(ethers.parseEther('1.0'));
+    await ioIDStore
       .connect(projectOwner)
-      .applyIoID(projectId, idoNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
+      .applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
 
     ioID = await ethers.deployContract('ioID');
     await ioID.initialize(
@@ -56,9 +56,9 @@ describe('ioID tests', function () {
     );
 
     ioIDRegistry = await ethers.deployContract('ioIDRegistry');
-    await ioIDRegistry.initialize(ioIDFactory.target, ioID.target);
+    await ioIDRegistry.initialize(ioIDStore.target, ioID.target);
 
-    await ioIDFactory.setIoIDRegistry(ioIDRegistry.target);
+    await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
     await ioID.setMinter(ioIDRegistry.target);
   });
 

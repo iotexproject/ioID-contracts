@@ -5,7 +5,6 @@ import {ERC721Upgradeable, ERC721EnumerableUpgradeable} from "@openzeppelin/cont
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
 import "./interfaces/IioID.sol";
 import "./interfaces/IioIDRegistry.sol";
-import "./interfaces/IioIDFactory.sol";
 
 contract ioID is IioID, ERC721EnumerableUpgradeable {
     event CreateIoID(address indexed owner, uint256 id, address wallet, string did);
@@ -16,7 +15,6 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
     address public minter;
     address public walletRegistry;
     address public walletImplementation;
-    address public ioIDFactory;
 
     mapping(bytes32 => address) _wallets;
     mapping(uint256 => address) _devices;
@@ -61,7 +59,7 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
         return _mint(_projectId, _device, _owner);
     }
 
-    // TODO: 
+    // TODO:
     // 1. add to project device list
     // 2. remove sprout project NFT to ioID
     function _mint(uint256 _projectId, address _device, address _owner) internal returns (uint256 id_) {

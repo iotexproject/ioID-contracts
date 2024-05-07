@@ -3,16 +3,16 @@ pragma solidity ^0.8.19;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "./interfaces/IProject.sol";
-import "./interfaces/IioIDFactory.sol";
+import "./interfaces/IioIDStore.sol";
 
-contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
+contract ioIDStore is IioIDStore, OwnableUpgradeable {
     event SetIoIDRegistry(address indexed ioIDRegistry);
 
     address public project;
     address public ioIDRegistry;
     uint256 public override price;
-    mapping(uint256 => address) public override projectNftContract;
-    mapping(address => uint256) public override nftContractProject;
+    mapping(uint256 => address) public override projectDeviceContract;
+    mapping(address => uint256) public override deviceContractProject;
     mapping(uint256 => uint256) public override projectAppliedAmount;
     mapping(uint256 => uint256) public override projectActivedAmount;
 
@@ -25,22 +25,20 @@ contract ioIDFactory is IioIDFactory, OwnableUpgradeable {
         emit ChangePrice(price);
     }
 
-    // TODO:
-    // 1. remove deviceNFT and bind deviceNFT API?
-    function applyIoID(uint256 projectId, address nft, uint256 amount) external payable override {
-        require(msg.value >= amount * price, "insufficient fund");
-        require(IProject(project).ownerOf(projectId) == msg.sender, "invald project owner");
-        require(nft != address(0), "zero address");
-        if (projectNftContract[projectId] != address(0)) {
-            nft = projectNftContract[projectId];
+    function applyIoIDs(uint256 _projectId, address _projectDevice, uint256 _amount) external payable override {
+        require(msg.value >= _amount * price, "insufficient fund");
+        require(IProject(project).ownerOf(_projectId) == msg.sender, "invald project owner");
+        require(_projectDevice != address(0), "zero address");
+        if (projectDeviceContract[_projectId] != address(0)) {
+            _projectDevice = projectDeviceContract[_projectId];
         } else {
-            projectNftContract[projectId] = nft;
-            nftContractProject[nft] = projectId;
+            projectDeviceContract[_projectId] = _projectDevice;
+            deviceContractProject[_projectDevice] = _projectId;
         }
         unchecked {
-            projectAppliedAmount[projectId] += amount;
+            projectAppliedAmount[_projectId] += _amount;
         }
-        emit ApplyIoID(projectId, nft, amount);
+        emit ApplyIoIDs(_projectId, _projectDevice, _amount);
     }
 
     function activeIoID(uint256 projectId) external override {
