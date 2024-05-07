@@ -29,7 +29,8 @@ async function main() {
   console.log(`IDO NFT deployed to ${idoNFT.target}`);
 
   const ioIDStore = await ethers.getContractAt('ioIDStore', process.env.IOID_STORE);
-  await ioIDStore.applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
+  const price = await ioIDStore.price();
+  await ioIDStore.applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * price });
 }
 
 main().catch(err => {
