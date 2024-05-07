@@ -27,9 +27,7 @@ describe('ioID tests', function () {
     const receipt = await tx.wait();
     for (let i = 0; i < receipt!.logs.length; i++) {
       const log = receipt!.logs[i];
-      if (
-        log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-      ) {
+      if (log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') {
         projectId = BigInt(log.topics[3]);
       }
     }
@@ -40,8 +38,7 @@ describe('ioID tests', function () {
     idoNFTId = 1n;
 
     ioIDStore = await ethers.deployContract('ioIDStore');
-    await ioIDStore.initialize(project.target);
-    await ioIDStore.changePrice(ethers.parseEther('1.0'));
+    await ioIDStore.initialize(project.target, ethers.parseEther('1.0'));
     await ioIDStore
       .connect(projectOwner)
       .applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });

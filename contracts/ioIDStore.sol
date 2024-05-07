@@ -16,13 +16,13 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     mapping(uint256 => uint256) public override projectAppliedAmount;
     mapping(uint256 => uint256) public override projectActivedAmount;
 
-    function initialize(address _project) public initializer {
+    function initialize(address _project, uint256 _price) public initializer {
         __Ownable_init();
 
         project = _project;
-        price = 1000 ether;
+        price = _price;
         ioIDRegistry = msg.sender;
-        emit ChangePrice(price);
+        emit Initialize(_project, _price);
     }
 
     function applyIoIDs(uint256 _projectId, address _projectDevice, uint256 _amount) external payable override {

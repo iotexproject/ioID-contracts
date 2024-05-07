@@ -1,19 +1,18 @@
 import { ethers } from 'hardhat';
 
 async function main() {
-  if (!process.env.PROJECT_REGISTRAR) {
+  if (!process.env.PROJECT_REGISTRY) {
     console.log(`Please provide project registrar address`);
     return;
   }
-  if (!process.env.IOID_FACTORY) {
-    console.log(`Please provide ioIDFactory address`);
+  if (!process.env.IOID_STORE) {
+    console.log(`Please provide ioIDStore address`);
     return;
   }
   const [deployer] = await ethers.getSigners();
 
-  const projectRegistrar = await ethers.getContractAt('IProjectRegistrar', process.env.PROJECT_REGISTRAR);
-  const fee = await projectRegistrar.registrationFee();
-  let tx = await projectRegistrar.register({ value: fee });
+  const projectRegistry = await ethers.getContractAt('ProjectRegistry', process.env.PROJECT_REGISTRY);
+  let tx = await projectRegistry.register();
   const receipt = await tx.wait();
   let projectId;
   for (let i = 0; i < receipt!.logs.length; i++) {
@@ -23,14 +22,14 @@ async function main() {
     }
   }
 
-  const deviceNFT = await ethers.deployContract('DeviceNFT');
-  await deviceNFT.waitForDeployment();
-  tx = await deviceNFT.configureMinter(deployer, 100);
+  const idoNFT = await ethers.deployContract('IDONFT');
+  await idoNFT.waitForDeployment();
+  tx = await idoNFT.configureMinter(deployer, 100);
   await tx.wait();
-  console.log(`DeviceNFT deployed to ${deviceNFT.target}`);
+  console.log(`IDO NFT deployed to ${idoNFT.target}`);
 
-  const ioIDFactory = await ethers.getContractAt('ioIDFactory', process.env.IOID_FACTORY);
-  await ioIDFactory.applyIoID(projectId, deviceNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
+  const ioIDStore = await ethers.getContractAt('ioIDStore', process.env.IOID_STORE);
+  await ioIDStore.applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * ethers.parseEther('1.0') });
 }
 
 main().catch(err => {

@@ -5,7 +5,8 @@ interface IioIDStore {
     event ApplyIoIDs(uint256 indexed projectId, address indexed projectDevice, uint256 amount);
     event ActiveIoID(uint256 indexed projectId);
 
-    event ChangePrice(uint256 indexed price);
+    event Initialize(address indexed project, uint256 price);
+    event ChangePrice(uint256 price);
 
     function price() external view returns (uint256);
 
