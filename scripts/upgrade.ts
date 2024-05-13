@@ -1,14 +1,23 @@
 import { ethers, upgrades } from 'hardhat';
 
 async function main() {
-  if (!process.env.IOID_FACTORY) {
-    console.log(`Please provide ioIDFactory address`);
-    return;
+  if (process.env.IOID_STORE) {
+    const ioIDStore = await ethers.getContractFactory('ioIDStore');
+    await upgrades.upgradeProxy(process.env.IOID_STORE, ioIDStore, {});
+    console.log(`Upgrade ioIDStore ${process.env.IOID_STORE} successfull!`);
   }
 
-  const ioIDFactory = await ethers.getContractFactory('ioIDFactory');
-  await upgrades.upgradeProxy(process.env.IOID_FACTORY, ioIDFactory, {});
-  console.log(`Upgrade ioIDFactory ${process.env.IOID_FACTORY} successfull!`);
+  if (process.env.IOID) {
+    const ioID = await ethers.getContractFactory('ioID');
+    await upgrades.upgradeProxy(process.env.IOID, ioID, {});
+    console.log(`Upgrade ioID ${process.env.IOID} successfull!`);
+  }
+
+  if (process.env.IOID_REGISTRY) {
+    const ioIDRegistry = await ethers.getContractFactory('ioIDRegistry');
+    await upgrades.upgradeProxy(process.env.IOID_REGISTRY, ioIDRegistry, {});
+    console.log(`Upgrade ioIDRegistry ${process.env.IOID_REGISTRY} successfull!`);
+  }
 }
 
 main().catch(err => {
