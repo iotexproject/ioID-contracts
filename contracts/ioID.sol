@@ -2,11 +2,15 @@
 pragma solidity ^0.8.19;
 
 import {ERC721Upgradeable, ERC721EnumerableUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+
 import {IERC6551Registry} from "./interfaces/IERC6551Registry.sol";
+import "./libraries/LinkedAddressList.sol";
 import "./interfaces/IioID.sol";
 import "./interfaces/IioIDRegistry.sol";
 
 contract ioID is IioID, ERC721EnumerableUpgradeable {
+    using LinkedAddressList for mapping(address => address);
+
     event CreateIoID(address indexed owner, uint256 id, address wallet, string did);
     event SetMinter(address indexed minter);
     event RemoveDIDWallet(address indexed wallet, string did);
@@ -18,6 +22,10 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
 
     mapping(bytes32 => address) _wallets;
     mapping(uint256 => address) _devices;
+
+    mapping(address => uint256) public override deviceProject;
+    mapping(uint256 => uint256) public override projectDeviceCount;
+    mapping(uint256 => mapping(address => address)) _projectIDs;
 
     function initialize(
         address _minter,
@@ -59,9 +67,6 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
         return _mint(_projectId, _device, _owner);
     }
 
-    // TODO:
-    // 1. add to project device list
-    // 2. remove sprout project NFT to ioID
     function _mint(uint256 _projectId, address _device, address _owner) internal returns (uint256 id_) {
         require(minter == msg.sender, "invalid minter");
 
@@ -78,6 +83,12 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
         string memory _did = IioIDRegistry(minter).documentID(_device);
         _wallets[keccak256(abi.encodePacked(_did))] = _wallet;
         _devices[id_] = _device;
+
+        mapping(address => address) storage projectIDs_ = _projectIDs[_projectId];
+        projectIDs_.add(_device);
+        projectDeviceCount[_projectId] += 1;
+        deviceProject[_device] = _projectId;
+
         emit CreateIoID(_owner, id_, _wallet, _did);
     }
 
@@ -94,5 +105,17 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
         delete _devices[_id];
 
         emit RemoveDIDWallet(_wallet, _did);
+    }
+
+    function projectIDs(
+        uint256 _projectId,
+        address _start,
+        uint256 _pageSize
+    ) external view override returns (address[] memory array, address next) {
+        return _projectIDs[_projectId].page(_start, _pageSize);
+    }
+
+    function did(address _device) public view override returns (string memory) {
+        return IioIDRegistry(minter).documentID(_device);
     }
 }

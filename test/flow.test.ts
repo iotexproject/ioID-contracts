@@ -81,11 +81,20 @@ describe('ioID tests', function () {
     const s = '0x' + signature.substring(66, 130);
     const v = '0x' + signature.substring(130);
 
+    expect(await ioID.projectDeviceCount(projectId)).to.equal(0);
     await deviceNFT.connect(owner).approve(ioIDRegistry.target, deviceNFTId);
     await ioIDRegistry
       .connect(owner)
       .register(deviceNFT.target, deviceNFTId, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
     const did = await ioIDRegistry.documentID(device.address);
+
+    expect(await ioID.deviceProject(device.address)).to.equal(projectId);
+    expect(await ioID.projectDeviceCount(projectId)).to.equal(1);
+
+    const ids = await ioID.projectIDs(projectId, "0x0000000000000000000000000000000000000001", 10);
+    expect(ids.array.length).to.equal(1);
+    expect(ids.array[0]).to.equal(device.address);
+    expect(ids.next).to.equal("0x0000000000000000000000000000000000000000");
 
     const wallet = await ioID['wallet(string)'](did);
     expect((await ethers.provider.getCode(wallet)).length).to.gt(0);
