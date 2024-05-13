@@ -22,15 +22,15 @@ async function main() {
     }
   }
 
-  const idoNFT = await ethers.deployContract('IDONFT');
-  await idoNFT.waitForDeployment();
-  tx = await idoNFT.configureMinter(deployer, 100);
+  const deviceNFT = await ethers.deployContract('DeviceNFT');
+  await deviceNFT.waitForDeployment();
+  tx = await deviceNFT.configureMinter(deployer, 100);
   await tx.wait();
-  console.log(`IDO NFT deployed to ${idoNFT.target}`);
+  console.log(`Device NFT deployed to ${deviceNFT.target}`);
 
   const ioIDStore = await ethers.getContractAt('ioIDStore', process.env.IOID_STORE);
   const price = await ioIDStore.price();
-  tx = await ioIDStore.applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * price });
+  tx = await ioIDStore.applyIoIDs(projectId, 100, { value: 100n * price });
   await tx.wait();
 }
 
