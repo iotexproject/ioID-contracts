@@ -2,8 +2,9 @@
 pragma solidity ^0.8.19;
 
 interface IioIDStore {
-    event ApplyIoIDs(uint256 indexed projectId, address indexed projectDevice, uint256 amount);
+    event ApplyIoIDs(uint256 indexed projectId, uint256 amount);
     event ActiveIoID(uint256 indexed projectId);
+    event SetDeviceContract(uint256 indexed projectId, address indexed deviceContract);
 
     event Initialize(address indexed project, uint256 price);
     event ChangePrice(uint256 price);
@@ -16,7 +17,9 @@ interface IioIDStore {
     function projectAppliedAmount(uint256 _projectId) external view returns (uint256);
     function projectActivedAmount(uint256 _projectId) external view returns (uint256);
 
-    function applyIoIDs(uint256 _projectId, address _projectDevice, uint256 _amount) external payable;
+    function applyIoIDs(uint256 _projectId, uint256 _amount) external payable;
+    function setDeviceContract(uint256 _projectId, address _contract) external;
+    function changeDeviceContract(uint256 _projectId, address _contract) external;
 
     function activeIoID(uint256 _projectId) external;
 

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 import "./interfaces/IProject.sol";
 import "./interfaces/IioIDStore.sol";
 
@@ -25,20 +26,31 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
         emit Initialize(_project, _price);
     }
 
-    function applyIoIDs(uint256 _projectId, address _projectDevice, uint256 _amount) external payable override {
+    function applyIoIDs(uint256 _projectId, uint256 _amount) external payable override {
         require(msg.value >= _amount * price, "insufficient fund");
         require(IProject(project).ownerOf(_projectId) == msg.sender, "invald project owner");
-        require(_projectDevice != address(0), "zero address");
-        if (projectDeviceContract[_projectId] != address(0)) {
-            _projectDevice = projectDeviceContract[_projectId];
-        } else {
-            projectDeviceContract[_projectId] = _projectDevice;
-            deviceContractProject[_projectDevice] = _projectId;
-        }
         unchecked {
             projectAppliedAmount[_projectId] += _amount;
         }
-        emit ApplyIoIDs(_projectId, _projectDevice, _amount);
+        emit ApplyIoIDs(_projectId, _amount);
+    }
+
+    function setDeviceContract(uint256 _projectId, address _contract) external override {
+        require(IProject(project).ownerOf(_projectId) == msg.sender, "invald project owner");
+        require(projectDeviceContract[_projectId] == address(0), "project setted");
+        require(deviceContractProject[_contract] == 0, "contract setted");
+
+        projectDeviceContract[_projectId] = _contract;
+        deviceContractProject[_contract] = _projectId;
+        emit SetDeviceContract(_projectId, _contract);
+    }
+
+    function changeDeviceContract(uint256 _projectId, address _contract) external override onlyOwner {
+        require(deviceContractProject[_contract] == 0, "contract setted");
+
+        projectDeviceContract[_projectId] = _contract;
+        deviceContractProject[_contract] = _projectId;
+        emit SetDeviceContract(_projectId, _contract);
     }
 
     function activeIoID(uint256 projectId) external override {
@@ -64,7 +76,7 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     function withdraw(address[] calldata _recipicents, uint256[] calldata _amounts) external onlyOwner {
         require(_recipicents.length == _amounts.length, "invalid request");
 
-        for (uint i = 0; i < _recipicents.length; i++) {
+        for (uint256 i = 0; i < _recipicents.length; i++) {
             (bool success, ) = _recipicents[i].call{value: _amounts[i]}("");
             require(success, "transfer fail");
         }

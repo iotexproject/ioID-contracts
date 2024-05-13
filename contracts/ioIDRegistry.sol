@@ -77,7 +77,8 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     ) external override {
         require(device != address(0), "device is the zero address");
         require(!registeredNFT[deviceContract][tokenId], "nft already used");
-        require(IERC721(deviceContract).ownerOf(tokenId) == msg.sender, "invalid device nft owner");
+        IERC721 _deviceNFT = IERC721(deviceContract);
+        require(_deviceNFT.ownerOf(tokenId) == msg.sender, "invalid device nft owner");
         require(records[device].hash == bytes32(0), "device exists");
 
         IioIDStore _store = IioIDStore(ioIDStore);
@@ -95,7 +96,12 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
         _setRecord(device, hash, uri);
-        uint256 _id = IioID(ioID).mint(_projectId, device, msg.sender);
+        IioID _ioID = IioID(ioID);
+        uint256 _id = _ioID.mint(_projectId, device, msg.sender);
+
+        (address _wallet, ) = _ioID.wallet(_id);
+        _deviceNFT.safeTransferFrom(msg.sender, _wallet, tokenId);
+
         ids[device] = _id;
         registeredNFT[deviceContract][tokenId] = true;
         emit NewDevice(device, msg.sender, hash);

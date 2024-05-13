@@ -43,7 +43,7 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
         emit SetMinter(_minter);
     }
 
-    function wallet(uint256 _id) external view returns (address wallet_, string memory did_) {
+    function wallet(uint256 _id) external view override returns (address wallet_, string memory did_) {
         wallet_ = IERC6551Registry(walletRegistry).account(walletImplementation, 0, block.chainid, address(this), _id);
         address _device = _devices[_id];
         if (_device != address(0)) {

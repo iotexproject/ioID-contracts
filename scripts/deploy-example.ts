@@ -30,7 +30,8 @@ async function main() {
 
   const ioIDStore = await ethers.getContractAt('ioIDStore', process.env.IOID_STORE);
   const price = await ioIDStore.price();
-  await ioIDStore.applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * price });
+  tx = await ioIDStore.applyIoIDs(projectId, idoNFT.target, 100, { value: 100n * price });
+  await tx.wait();
 }
 
 main().catch(err => {

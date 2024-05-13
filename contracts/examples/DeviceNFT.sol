@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract IDONFT is ERC721, Ownable {
+contract DeviceNFT is ERC721, Ownable {
     event MinterConfigured(address indexed minter, uint256 minterAllowedAmount);
     event MinterRemoved(address indexed minter);
 
@@ -12,7 +12,7 @@ contract IDONFT is ERC721, Ownable {
     mapping(address => uint256) internal minterAllowed;
     uint256 nextId;
 
-    constructor() ERC721("Example IDO NFT", "EIN") {}
+    constructor() ERC721("Example Device NFT", "EDN") {}
 
     function minterAllowance(address minter) external view returns (uint256) {
         return minterAllowed[minter];
