@@ -37,7 +37,7 @@ async function main() {
 
   const ioIDStore = await upgrades.deployProxy(
     await ethers.getContractFactory('ioIDStore'),
-    ["0x6972C35dB95258DB79D662959244Eaa544812c5A", ethers.parseEther(process.env.IOID_PRICE)],
+    ['0x6972C35dB95258DB79D662959244Eaa544812c5A', ethers.parseEther(process.env.IOID_PRICE)],
     {
       initializer: 'initialize',
     },

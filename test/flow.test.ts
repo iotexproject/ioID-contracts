@@ -91,10 +91,10 @@ describe('ioID tests', function () {
     expect(await ioID.deviceProject(device.address)).to.equal(projectId);
     expect(await ioID.projectDeviceCount(projectId)).to.equal(1);
 
-    const ids = await ioID.projectIDs(projectId, "0x0000000000000000000000000000000000000001", 10);
+    const ids = await ioID.projectIDs(projectId, '0x0000000000000000000000000000000000000001', 10);
     expect(ids.array.length).to.equal(1);
     expect(ids.array[0]).to.equal(device.address);
-    expect(ids.next).to.equal("0x0000000000000000000000000000000000000000");
+    expect(ids.next).to.equal('0x0000000000000000000000000000000000000000');
 
     const wallet = await ioID['wallet(string)'](did);
     expect((await ethers.provider.getCode(wallet)).length).to.gt(0);
