@@ -23,7 +23,7 @@ describe('ioID tests', function () {
     await projectRegistry.initialize(project.target);
     await project.setMinter(projectRegistry.target);
 
-    const tx = await projectRegistry.connect(projectOwner).register();
+    const tx = await projectRegistry.connect(projectOwner)['register(string)']('hello project');
     const receipt = await tx.wait();
     for (let i = 0; i < receipt!.logs.length; i++) {
       const log = receipt!.logs[i];

@@ -20,6 +20,15 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
         setMinter(msg.sender);
     }
 
+    // @deprecated
+    function mint(address _owner) external returns (uint256 projectId_) {
+        require(msg.sender == minter, "not minter");
+
+        projectId_ = ++nextProjectId;
+
+        _mint(_owner, projectId_);
+    }
+
     function mint(address _owner, string calldata _name) external returns (uint256 projectId_) {
         require(msg.sender == minter, "not minter");
         bytes32 _nameHash = keccak256(abi.encodePacked(_name));

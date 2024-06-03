@@ -12,6 +12,11 @@ contract ProjectRegistry is Initializable {
         project = IProject(_project);
     }
 
+    // @deprecated
+    function register() external payable returns (uint256) {
+        return project.mint(msg.sender);
+    }
+
     function register(string calldata _name) external payable returns (uint256) {
         return project.mint(msg.sender, _name);
     }
