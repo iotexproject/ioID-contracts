@@ -1,6 +1,20 @@
 import { ethers, upgrades } from 'hardhat';
 
 async function main() {
+  if (process.env.PROJECT) {
+    const Project = await ethers.getContractFactory('Project');
+    await upgrades.forceImport(process.env.PROJECT, Project);
+    await upgrades.upgradeProxy(process.env.PROJECT, Project, {});
+    console.log(`Upgrade Project ${process.env.PROJECT} successfull!`);
+  }
+
+  if (process.env.PROJECT_REGISTRY) {
+    const ProjectRegistry = await ethers.getContractFactory('ProjectRegistry');
+    await upgrades.forceImport(process.env.PROJECT_REGISTRY, ProjectRegistry);
+    await upgrades.upgradeProxy(process.env.PROJECT_REGISTRY, ProjectRegistry, {});
+    console.log(`Upgrade ProjectRegistry ${process.env.PROJECT_REGISTRY} successfull!`);
+  }
+
   if (process.env.IOID_STORE) {
     const ioIDStore = await ethers.getContractFactory('ioIDStore');
     await upgrades.upgradeProxy(process.env.IOID_STORE, ioIDStore, {});
