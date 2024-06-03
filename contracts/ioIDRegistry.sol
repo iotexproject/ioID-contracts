@@ -13,8 +13,8 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     using Counters for Counters.Counter;
     using Strings for address;
 
-    event NewDevice(address indexed device, address owner, bytes32 hash);
-    event UpdateDevice(address indexed device, address owner, bytes32 hash);
+    event NewDevice(address indexed device, address owner, bytes32 hash, string uri);
+    event UpdateDevice(address indexed device, address owner, bytes32 hash, string uri);
     event RemoveDevice(address indexed device, address owner);
     event SetIoIdStore(address indexed store);
 
@@ -104,7 +104,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
 
         ids[device] = _id;
         registeredNFT[deviceContract][tokenId] = true;
-        emit NewDevice(device, msg.sender, hash);
+        emit NewDevice(device, msg.sender, hash, uri);
     }
 
     function update(
@@ -125,7 +125,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
         _setRecord(device, hash, uri);
-        emit UpdateDevice(device, msg.sender, hash);
+        emit UpdateDevice(device, msg.sender, hash, uri);
     }
 
     // TODO: disable remove api?
