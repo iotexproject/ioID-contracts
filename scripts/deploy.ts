@@ -16,28 +16,28 @@ async function main() {
 
   const [deployer] = await ethers.getSigners();
 
-  // const project = await upgrades.deployProxy(await ethers.getContractFactory('Project'), ['ioID Project', 'IPN'], {
-  //   initializer: 'initialize',
-  // });
-  // await project.waitForDeployment();
-  // console.log(`Project deployed to ${project.target}`);
-  // const projectRegistry = await upgrades.deployProxy(
-  //   await ethers.getContractFactory('ProjectRegistry'),
-  //   [project.target],
-  //   {
-  //     initializer: 'initialize',
-  //   },
-  // );
-  // await projectRegistry.waitForDeployment();
-  // console.log(`ProjectRegistry deployed to ${projectRegistry.target}`);
+  const project = await upgrades.deployProxy(await ethers.getContractFactory('Project'), ['ioID Project', 'IPN'], {
+    initializer: 'initialize',
+  });
+  await project.waitForDeployment();
+  console.log(`Project deployed to ${project.target}`);
+  const projectRegistry = await upgrades.deployProxy(
+    await ethers.getContractFactory('ProjectRegistry'),
+    [project.target],
+    {
+      initializer: 'initialize',
+    },
+  );
+  await projectRegistry.waitForDeployment();
+  console.log(`ProjectRegistry deployed to ${projectRegistry.target}`);
 
-  // console.log(`Set Project minter to ${projectRegistry.target}`);
-  // let tx = await project.setMinter(projectRegistry.target);
-  // await tx.wait();
+  console.log(`Set Project minter to ${projectRegistry.target}`);
+  let tx = await project.setMinter(projectRegistry.target);
+  await tx.wait();
 
   const ioIDStore = await upgrades.deployProxy(
     await ethers.getContractFactory('ioIDStore'),
-    ['0x6972C35dB95258DB79D662959244Eaa544812c5A', ethers.parseEther(process.env.IOID_PRICE)],
+    [project.target, ethers.parseEther(process.env.IOID_PRICE)],
     {
       initializer: 'initialize',
     },
@@ -65,7 +65,7 @@ async function main() {
   console.log(`ioIDRegistry deployed to ${ioIDRegistry.target}`);
 
   console.log(`Set ioIDFactory ioIDRegistry to ${ioIDRegistry.target}`);
-  let tx = await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
+  tx = await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
   await tx.wait();
 
   console.log(`Set ioID minter to ${ioIDRegistry.target}`);

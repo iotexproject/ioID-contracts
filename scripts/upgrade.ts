@@ -4,14 +4,18 @@ async function main() {
   if (process.env.PROJECT) {
     const Project = await ethers.getContractFactory('Project');
     await upgrades.forceImport(process.env.PROJECT, Project);
-    await upgrades.upgradeProxy(process.env.PROJECT, Project, {});
+    await upgrades.upgradeProxy(process.env.PROJECT, Project, {
+      redeployImplementation: 'always',
+    });
     console.log(`Upgrade Project ${process.env.PROJECT} successfull!`);
   }
 
   if (process.env.PROJECT_REGISTRY) {
     const ProjectRegistry = await ethers.getContractFactory('ProjectRegistry');
     await upgrades.forceImport(process.env.PROJECT_REGISTRY, ProjectRegistry);
-    await upgrades.upgradeProxy(process.env.PROJECT_REGISTRY, ProjectRegistry, {});
+    await upgrades.upgradeProxy(process.env.PROJECT_REGISTRY, ProjectRegistry, {
+      redeployImplementation: 'always',
+    });
     console.log(`Upgrade ProjectRegistry ${process.env.PROJECT_REGISTRY} successfull!`);
   }
 

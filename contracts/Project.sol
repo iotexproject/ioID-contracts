@@ -25,7 +25,6 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
         require(msg.sender == minter, "not minter");
 
         projectId_ = ++nextProjectId;
-
         _mint(_owner, projectId_);
     }
 
