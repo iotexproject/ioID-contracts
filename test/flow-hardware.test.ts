@@ -5,7 +5,7 @@ import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { keccak256 } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
 
-describe('ioID tests', function () {
+describe('ioID hardware tests', function () {
   let deployer, projectOwner, owner: HardhatEthersSigner;
   let ioIDStore: IoIDStore;
   let ioID: IoID;
@@ -23,7 +23,7 @@ describe('ioID tests', function () {
     await projectRegistry.initialize(project.target);
     await project.setMinter(projectRegistry.target);
 
-    const tx = await projectRegistry.connect(projectOwner)['register(string)']('hello project');
+    const tx = await projectRegistry.connect(projectOwner)['register(string,uint8)']('hello project', 0);
     // const tx = await projectRegistry.connect(projectOwner).register();
     const receipt = await tx.wait();
     for (let i = 0; i < receipt!.logs.length; i++) {
@@ -86,7 +86,9 @@ describe('ioID tests', function () {
     await deviceNFT.connect(owner).approve(ioIDRegistry.target, deviceNFTId);
     await ioIDRegistry
       .connect(owner)
-      .register(deviceNFT.target, deviceNFTId, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
+      [
+        'register(address,uint256,address,address,bytes32,string,uint8,bytes32,bytes32)'
+      ](deviceNFT.target, deviceNFTId, owner.address, device.address, keccak256('0x'), 'http://resolver.did', v, r, s);
     const did = await ioIDRegistry.documentID(device.address);
 
     expect(await ioID.deviceProject(device.address)).to.equal(projectId);

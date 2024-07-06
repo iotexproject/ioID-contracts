@@ -20,4 +20,8 @@ contract ProjectRegistry is Initializable {
     function register(string calldata _name) external payable returns (uint256) {
         return project.mint(msg.sender, _name);
     }
+
+    function register(string calldata _name, ProjectType _type) external payable returns (uint256) {
+        return project.mint(msg.sender, _name, _type);
+    }
 }
