@@ -4,6 +4,8 @@ pragma solidity ^0.8.19;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
+import {ProjectType} from "./interfaces/IProject.sol";
+
 contract Project is OwnableUpgradeable, ERC721Upgradeable {
     event SetMinter(address indexed minter);
     event SetName(uint256 indexed projectId, string name);
@@ -13,6 +15,7 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
     bytes32 constant EMPTY_NAME_HASH = keccak256(abi.encodePacked(""));
     mapping(bytes32 => bool) nameHashes;
     mapping(uint256 => string) names;
+    mapping(uint256 => ProjectType) types;
 
     function initialize(string calldata _name, string calldata _symbol) public initializer {
         __Ownable_init();
@@ -29,6 +32,18 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
     }
 
     function mint(address _owner, string calldata _name) external returns (uint256 projectId_) {
+        return _mintProject(_owner, _name, ProjectType.Hardware);
+    }
+
+    function mint(address _owner, string calldata _name, ProjectType _type) external returns (uint256) {
+        return _mintProject(_owner, _name, _type);
+    }
+
+    function _mintProject(
+        address _owner,
+        string calldata _name,
+        ProjectType _type
+    ) internal returns (uint256 projectId_) {
         require(msg.sender == minter, "not minter");
         bytes32 _nameHash = keccak256(abi.encodePacked(_name));
         require(_nameHash != EMPTY_NAME_HASH, "empty name");
@@ -38,6 +53,7 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
 
         _mint(_owner, projectId_);
         names[projectId_] = _name;
+        types[projectId_] = _type;
         nameHashes[_nameHash] = true;
         emit SetName(projectId_, _name);
     }
@@ -45,6 +61,11 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
     function name(uint256 _projectId) external view returns (string memory) {
         _requireMinted(_projectId);
         return names[_projectId];
+    }
+
+    function projectType(uint256 _projectId) external view returns (ProjectType) {
+        _requireMinted(_projectId);
+        return types[_projectId];
     }
 
     function setName(uint256 _projectId, string calldata _name) external {
