@@ -21,7 +21,10 @@ async function main() {
 
   if (process.env.IOID_STORE) {
     const ioIDStore = await ethers.getContractFactory('ioIDStore');
-    await upgrades.upgradeProxy(process.env.IOID_STORE, ioIDStore, {});
+    await upgrades.forceImport(process.env.IOID_STORE, ioIDStore);
+    await upgrades.upgradeProxy(process.env.IOID_STORE, ioIDStore, {
+      redeployImplementation: 'always',
+    });
     console.log(`Upgrade ioIDStore ${process.env.IOID_STORE} successfull!`);
   }
 
@@ -33,7 +36,10 @@ async function main() {
 
   if (process.env.IOID_REGISTRY) {
     const ioIDRegistry = await ethers.getContractFactory('ioIDRegistry');
-    await upgrades.upgradeProxy(process.env.IOID_REGISTRY, ioIDRegistry, {});
+    await upgrades.forceImport(process.env.IOID_REGISTRY, ioIDRegistry);
+    await upgrades.upgradeProxy(process.env.IOID_REGISTRY, ioIDRegistry, {
+      redeployImplementation: 'always',
+    });
     console.log(`Upgrade ioIDRegistry ${process.env.IOID_REGISTRY} successfull!`);
   }
 }
