@@ -21,7 +21,7 @@ interface IioIDStore {
     function setDeviceContract(uint256 _projectId, address _contract) external;
     function changeDeviceContract(uint256 _projectId, address _contract) external;
 
-    function activeIoID(uint256 _projectId) external;
+    function activeIoID(uint256 _projectId) external payable;
 
     function changePrice(uint256 _price) external;
 }

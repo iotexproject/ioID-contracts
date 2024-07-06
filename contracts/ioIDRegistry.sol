@@ -74,37 +74,51 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external override {
+    ) external payable override {
+        register(deviceContract, tokenId, msg.sender, device, hash, uri, v, r, s);
+    }
+
+    function register(
+        address deviceContract,
+        uint256 tokenId,
+        address user,
+        address device,
+        bytes32 hash,
+        string calldata uri,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) public payable override {
         require(device != address(0), "device is the zero address");
         require(!registeredNFT[deviceContract][tokenId], "nft already used");
         IERC721 _deviceNFT = IERC721(deviceContract);
-        require(_deviceNFT.ownerOf(tokenId) == msg.sender, "invalid device nft owner");
+        require(_deviceNFT.ownerOf(tokenId) == user, "invalid device nft owner");
         require(records[device].hash == bytes32(0), "device exists");
 
         IioIDStore _store = IioIDStore(ioIDStore);
         uint256 _projectId = _store.deviceContractProject(deviceContract);
         require(_projectId != 0, "invalid project");
-        _store.activeIoID(_projectId);
+        _store.activeIoID{value: msg.value}(_projectId);
 
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
                 DOMAIN_SEPARATOR,
-                keccak256(abi.encode(PERMIT_TYPE_HASH, msg.sender, _useNonce(device)))
+                keccak256(abi.encode(PERMIT_TYPE_HASH, user, _useNonce(device)))
             )
         );
         require(ecrecover(digest, v, r, s) == device, "invalid signature");
 
         _setRecord(device, hash, uri);
         IioID _ioID = IioID(ioID);
-        uint256 _id = _ioID.mint(_projectId, device, msg.sender);
+        uint256 _id = _ioID.mint(_projectId, device, user);
 
         (address _wallet, ) = _ioID.wallet(_id);
-        _deviceNFT.safeTransferFrom(msg.sender, _wallet, tokenId);
+        _deviceNFT.safeTransferFrom(user, _wallet, tokenId);
 
         ids[device] = _id;
         registeredNFT[deviceContract][tokenId] = true;
-        emit NewDevice(device, msg.sender, hash, uri);
+        emit NewDevice(device, user, hash, uri);
     }
 
     function update(

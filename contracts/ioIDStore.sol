@@ -27,8 +27,10 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     }
 
     function applyIoIDs(uint256 _projectId, uint256 _amount) external payable override {
+        IProject _project = IProject(project);
+        require(_project.projectType(_projectId) == ProjectType.Hardware, "only hardware project");
         require(msg.value >= _amount * price, "insufficient fund");
-        require(IProject(project).ownerOf(_projectId) == msg.sender, "invald project owner");
+        require(_project.ownerOf(_projectId) == msg.sender, "invald project owner");
         unchecked {
             projectAppliedAmount[_projectId] += _amount;
         }
@@ -53,14 +55,21 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
         emit SetDeviceContract(_projectId, _contract);
     }
 
-    function activeIoID(uint256 projectId) external override {
+    function activeIoID(uint256 _projectId) external payable override {
         require(ioIDRegistry == msg.sender, "only ioIDRegistry");
-        require(projectAppliedAmount[projectId] > projectActivedAmount[projectId], "insufficient ioID");
+        if (IProject(project).projectType(_projectId) == ProjectType.Hardware) {
+            require(projectAppliedAmount[_projectId] > projectActivedAmount[_projectId], "insufficient ioID");
+        } else {
+            require(msg.value >= price, "insufficient fund");
+            unchecked {
+                projectAppliedAmount[_projectId] += 1;
+            }
+        }
 
         unchecked {
-            projectActivedAmount[projectId] += 1;
+            projectActivedAmount[_projectId] += 1;
         }
-        emit ActiveIoID(projectId);
+        emit ActiveIoID(_projectId);
     }
 
     function changePrice(uint256 _price) external override onlyOwner {
