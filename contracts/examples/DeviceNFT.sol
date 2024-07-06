@@ -9,6 +9,7 @@ import "../interfaces/IDeviceNFT.sol";
 contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
     event MinterConfigured(address indexed minter, uint256 minterAllowedAmount);
     event MinterRemoved(address indexed minter);
+    event SetWeight(uint256 tokenId, uint256 weight);
 
     uint256 public immutable DEFAULT_WEIGHT = 1;
 
@@ -60,12 +61,20 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
         _mint(_to, _tokenId);
         if (_weight != 0) {
             weights[_tokenId] = _weight;
+            emit SetWeight(_tokenId, _weight);
+        } else {
+            emit SetWeight(_tokenId, DEFAULT_WEIGHT);
         }
         return _tokenId;
     }
 
-    function weight(uint256 tokenId) external view override returns (uint256) {
-        uint256 _weight = weights[tokenId];
+    function setWeight(uint256 _tokenId, uint256 _weight) external onlyOwner {
+        weights[_tokenId] = _weight;
+        emit SetWeight(_tokenId, _weight);
+    }
+
+    function weight(uint256 _tokenId) external view override returns (uint256) {
+        uint256 _weight = weights[_tokenId];
         if (_weight == 0) {
             return DEFAULT_WEIGHT;
         }
