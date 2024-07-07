@@ -1852,6 +1852,168 @@
         "0x17AF7b80F130b337720BEA9577Fd1a7D87cdE8B3",
         "0xB596D9E310D9E4e768ADAF7b63E1225170CAA7D5"
       ]
+    },
+    "4f05812d29de352acbc3efe136ef35b5f393c32e5f1c1e9ccc974eaa7ff5babe": {
+      "address": "0xB596D9E310D9E4e768ADAF7b63E1225170CAA7D5",
+      "layout": {
+        "solcVersion": "0.8.19",
+        "storage": [
+          {
+            "label": "_initialized",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_uint8",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:63",
+            "retypedFrom": "bool"
+          },
+          {
+            "label": "_initializing",
+            "offset": 1,
+            "slot": "0",
+            "type": "t_bool",
+            "contract": "Initializable",
+            "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:68"
+          },
+          {
+            "label": "DOMAIN_SEPARATOR",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_bytes32",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:24"
+          },
+          {
+            "label": "_nonces",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_mapping(t_address,t_struct(Counter)620_storage)",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:28"
+          },
+          {
+            "label": "records",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_address,t_struct(Record)2204_storage)",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:35"
+          },
+          {
+            "label": "ids",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:36"
+          },
+          {
+            "label": "registeredNFT",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_address,t_mapping(t_uint256,t_bool))",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:37"
+          },
+          {
+            "label": "ioIDStore",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_address",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:38"
+          },
+          {
+            "label": "ioID",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_address",
+            "contract": "ioIDRegistry",
+            "src": "contracts/ioIDRegistry.sol:39"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_mapping(t_uint256,t_bool))": {
+            "label": "mapping(address => mapping(uint256 => bool))",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Counter)620_storage)": {
+            "label": "mapping(address => struct Counters.Counter)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_struct(Record)2204_storage)": {
+            "label": "mapping(address => struct ioIDRegistry.Record)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_bool)": {
+            "label": "mapping(uint256 => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_string_storage": {
+            "label": "string",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Counter)620_storage": {
+            "label": "struct Counters.Counter",
+            "members": [
+              {
+                "label": "_value",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(Record)2204_storage": {
+            "label": "struct ioIDRegistry.Record",
+            "members": [
+              {
+                "label": "hash",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "uri",
+                "type": "t_string_storage",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint8": {
+            "label": "uint8",
+            "numberOfBytes": "1"
+          }
+        },
+        "namespaces": {}
+      },
+      "allAddresses": [
+        "0xB596D9E310D9E4e768ADAF7b63E1225170CAA7D5",
+        "0xDFCF9d0531F7866736f49628E344d4a71dEfD662"
+      ]
     }
   }
 }
