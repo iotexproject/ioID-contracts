@@ -10,7 +10,7 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     event SetIoIDRegistry(address indexed ioIDRegistry);
 
     address public project;
-    address public ioIDRegistry;
+    address public override ioIDRegistry;
     uint256 public override price;
     mapping(uint256 => address) public override projectDeviceContract;
     mapping(address => uint256) public override deviceContractProject;

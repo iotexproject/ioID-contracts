@@ -36,7 +36,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     mapping(address => uint256) private ids;
     mapping(address => mapping(uint256 => bool)) public override registeredNFT;
     address public ioIDStore;
-    address public ioID;
+    address public override ioID;
 
     modifier deviceExists(address owner) {
         require(records[owner].hash != bytes32(0), "device not exists");

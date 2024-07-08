@@ -9,7 +9,8 @@ import "../interfaces/IDeviceNFT.sol";
 contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
     event MinterConfigured(address indexed minter, uint256 minterAllowedAmount);
     event MinterRemoved(address indexed minter);
-    event SetWeight(uint256 tokenId, uint256 weight);
+    event WeightSetted(uint256 tokenId, uint256 weight);
+    event MinterAllowanceIncremented(address indexed owner, address indexed minter, uint256 allowanceIncrement);
 
     uint256 public immutable DEFAULT_WEIGHT = 1;
 
@@ -32,6 +33,14 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
         minters[_minter] = true;
         minterAllowed[_minter] = _minterAllowedAmount;
         emit MinterConfigured(_minter, _minterAllowedAmount);
+    }
+
+    function incrementMinterAllowance(address _minter, uint256 _allowanceIncrement) external onlyOwner {
+        require(_allowanceIncrement > 0, "zero amount");
+        require(minters[_minter], "not minter");
+
+        minterAllowed[_minter] += _allowanceIncrement;
+        emit MinterAllowanceIncremented(msg.sender, _minter, _allowanceIncrement);
     }
 
     function removeMinter(address _minter) external onlyOwner {
@@ -61,16 +70,16 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
         _mint(_to, _tokenId);
         if (_weight != 0) {
             weights[_tokenId] = _weight;
-            emit SetWeight(_tokenId, _weight);
+            emit WeightSetted(_tokenId, _weight);
         } else {
-            emit SetWeight(_tokenId, DEFAULT_WEIGHT);
+            emit WeightSetted(_tokenId, DEFAULT_WEIGHT);
         }
         return _tokenId;
     }
 
     function setWeight(uint256 _tokenId, uint256 _weight) external onlyOwner {
         weights[_tokenId] = _weight;
-        emit SetWeight(_tokenId, _weight);
+        emit WeightSetted(_tokenId, _weight);
     }
 
     function weight(uint256 _tokenId) external view override returns (uint256) {

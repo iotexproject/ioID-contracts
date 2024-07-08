@@ -17,6 +17,8 @@ interface IioIDStore {
     function projectAppliedAmount(uint256 _projectId) external view returns (uint256);
     function projectActivedAmount(uint256 _projectId) external view returns (uint256);
 
+    function ioIDRegistry() external view returns (address);
+
     function applyIoIDs(uint256 _projectId, uint256 _amount) external payable;
     function setDeviceContract(uint256 _projectId, address _contract) external;
     function changeDeviceContract(uint256 _projectId, address _contract) external;

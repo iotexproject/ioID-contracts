@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 interface IioIDRegistry {
     function documentID(address device) external pure returns (string memory);
     function deviceTokenId(address device) external view returns (uint256);
+    function ioID() external view returns (address);
 
     function registeredNFT(address presaleContract, uint256 tokenId) external view returns (bool);
 

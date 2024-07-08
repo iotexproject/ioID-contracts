@@ -17,3 +17,9 @@ interface IProject is IERC721 {
     function name(uint256 _projectId) external view returns (string memory);
     function projectType(uint256 _projectId) external view returns (ProjectType);
 }
+
+interface IProjectRegistry {
+    function project() external returns (IProject);
+
+    function register(string calldata _name, ProjectType _type) external payable returns (uint256);
+}
