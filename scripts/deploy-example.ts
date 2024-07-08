@@ -12,7 +12,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   const projectRegistry = await ethers.getContractAt('ProjectRegistry', process.env.PROJECT_REGISTRY);
-  let tx = await projectRegistry.register();
+  let tx = await projectRegistry['register(string,uint8)']('hello', 0);
   const receipt = await tx.wait();
   let projectId;
   for (let i = 0; i < receipt!.logs.length; i++) {
