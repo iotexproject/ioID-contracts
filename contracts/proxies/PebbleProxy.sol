@@ -38,14 +38,19 @@ contract PebbleProxy is Ownable, Initializable, ERC721Holder {
         projectRegistry = _projectRegistry;
     }
 
-    function initialize(string memory _name, uint256 _amount) external payable initializer {
+    function initialize(
+        string calldata _projectName,
+        string calldata _name,
+        string calldata _symbol,
+        uint256 _amount
+    ) external payable initializer {
         IioIDStore _ioIDStore = IioIDStore(ioIDStore);
 
-        pebbleNFT = new DeviceNFT();
+        pebbleNFT = new DeviceNFT(_name, _symbol);
         pebbleNFT.configureMinter(address(this), _amount);
         pebbleNFT.setApprovalForAll(_ioIDStore.ioIDRegistry(), true);
 
-        projectId = IProjectRegistry(projectRegistry).register(_name, ProjectType.Hardware);
+        projectId = IProjectRegistry(projectRegistry).register(_projectName, ProjectType.Hardware);
 
         _ioIDStore.setDeviceContract(projectId, address(pebbleNFT));
         _ioIDStore.applyIoIDs{value: msg.value}(projectId, _amount);

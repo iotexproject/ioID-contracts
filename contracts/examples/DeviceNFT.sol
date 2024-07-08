@@ -19,7 +19,7 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
     uint256 nextId;
     mapping(uint256 => uint256) internal weights;
 
-    constructor() ERC721("Example Device NFT", "EDN") {}
+    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
 
     function minterAllowance(address minter) external view returns (uint256) {
         return minterAllowed[minter];
