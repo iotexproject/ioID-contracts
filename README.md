@@ -23,13 +23,10 @@ ProjectRegistry deployed to 0xB7E1419d62ef429EE3130aF822e43DaBDDdB4aCE
 ioIDStore deployed to 0xA0C9f9A884cdAE649a42F16b057735Bc4fE786CD
 ioID deployed to 0x5688aF9f5b3aaf6c92d1A31067b7DcB31B103CF7
 ioIDRegistry deployed to 0x06b3Fcda51e01EE96e8E8873F0302381c955Fddd
+```
 
 3. Pebble
 
 ```
 Pebble proxy deployed to 0xb6ef9b08fe03c2454396e85232b9b7b8571c0145
-```
-
-// example
-IDO NFT deployed to 0xE04dFA88df72872c53DeE130c3f42C2142B6A158
 ```
