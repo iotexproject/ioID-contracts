@@ -91,6 +91,7 @@ contract PebbleProxy is Ownable, Initializable, ERC721Holder {
 
         uint256 _ioIDTokenId = _ioIDRegistry.deviceTokenId(_device);
         IERC721(_ioIDRegistry.ioID()).safeTransferFrom(address(this), _owner, _ioIDTokenId);
+        registerTime[deviceHash] = block.timestamp;
 
         emit PebbleRegistered(imei, _device, _owner, _tokenId, _ioIDTokenId);
     }
