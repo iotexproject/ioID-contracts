@@ -4,46 +4,52 @@ pragma solidity ^0.8.19;
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "../interfaces/IProject.sol";
 import "../interfaces/IioIDStore.sol";
 import "../interfaces/IioIDRegistry.sol";
 import {DeviceNFT} from "../examples/DeviceNFT.sol";
 
-interface Registration {
-    function find(string memory imei) external view returns (address device, address owner, bytes32 sn);
-}
-
 contract PebbleProxy is Ownable, Initializable, ERC721Holder {
+    using ECDSA for bytes32;
+
     event NewPebbleProxy(address indexed pebbleNFT, uint256 projectId, uint256 amount);
     event PebbleRegistered(
         string imei,
-        address indexed device,
         address indexed owner,
+        address indexed device,
         uint256 pebbleTokenId,
         uint256 ioIDTokenID
     );
+    event VerifierChanged(address indexed oldVerifier, address indexed newVerifier);
 
-    address public registration;
+    address public verifier;
     address public projectRegistry;
     address public ioIDStore;
     uint256 public projectId;
     DeviceNFT public pebbleNFT;
 
-    mapping(bytes32 => uint256) public registerTime;
+    mapping(bytes32 => uint256) public ioIds;
+    mapping(bytes32 => uint256) public deviceTokens;
+    mapping(bytes32 => address) public owners;
+    mapping(bytes32 => address) public devices;
 
-    constructor(address _registration, address _ioIDStore, address _projectRegistry) {
-        registration = _registration;
+    constructor(address _ioIDStore, address _projectRegistry) {
         ioIDStore = _ioIDStore;
         projectRegistry = _projectRegistry;
     }
 
     function initialize(
+        address _verifier,
         string calldata _projectName,
         string calldata _name,
         string calldata _symbol,
         uint256 _amount
     ) external payable initializer {
+        require(_verifier != address(0), "zero address");
+
+        verifier = _verifier;
         IioIDStore _ioIDStore = IioIDStore(ioIDStore);
 
         pebbleNFT = new DeviceNFT(_name, _symbol);
@@ -54,6 +60,15 @@ contract PebbleProxy is Ownable, Initializable, ERC721Holder {
 
         _ioIDStore.setDeviceContract(projectId, address(pebbleNFT));
         _ioIDStore.applyIoIDs{value: msg.value}(projectId, _amount);
+
+        emit VerifierChanged(address(0), _verifier);
+    }
+
+    function changeVerifier(address _verifier) external onlyOwner {
+        require(_verifier != address(0), "zero address");
+
+        verifier = _verifier;
+        emit VerifierChanged(address(0), _verifier);
     }
 
     function applyIoIDs(uint256 _amount) external payable onlyOwner {
@@ -69,30 +84,45 @@ contract PebbleProxy is Ownable, Initializable, ERC721Holder {
         IProjectRegistry(projectRegistry).project().approve(_to, projectId);
     }
 
-    function register(
-        string calldata imei,
-        bytes32 hash,
-        string calldata uri,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external payable {
-        (address _device, address _owner, ) = Registration(registration).find(imei);
-        require(_device != address(0) && _owner != address(0), "invalid pebble");
-        require(msg.sender == _owner, "invalid owner");
+    function pebble(
+        string calldata _imei
+    ) external view returns (address owner, address device, uint256 ioId, uint256 deviceTokenId) {
+        bytes32 deviceHash = keccak256(abi.encodePacked(_imei));
+        owner = owners[deviceHash];
+        device = devices[deviceHash];
+        ioId = ioIds[deviceHash];
+        deviceTokenId = deviceTokens[deviceHash];
+    }
 
-        bytes32 deviceHash = keccak256(abi.encodePacked(imei));
-        require(registerTime[deviceHash] == 0, "already registered");
+    function register(
+        string calldata _imei,
+        bytes calldata _verifySignature,
+        bytes32 _hash,
+        string calldata _uri,
+        address _owner,
+        address _device,
+        uint8 _v,
+        bytes32 _r,
+        bytes32 _s
+    ) external payable {
+        bytes32 deviceHash = keccak256(abi.encodePacked(_imei));
+        require(ioIds[deviceHash] == 0, "already registered");
+
+        bytes32 verifyMessage = keccak256(abi.encodePacked(block.chainid, _imei, _owner, _device));
+        require(verifyMessage.recover(_verifySignature) == verifier, "invalid verifier signature");
 
         uint256 _tokenId = pebbleNFT.mint(address(this));
 
         IioIDRegistry _ioIDRegistry = IioIDRegistry(IioIDStore(ioIDStore).ioIDRegistry());
-        _ioIDRegistry.register(address(pebbleNFT), _tokenId, _device, hash, uri, v, r, s);
+        _ioIDRegistry.register(address(pebbleNFT), _tokenId, _device, _hash, _uri, _v, _r, _s);
 
         uint256 _ioIDTokenId = _ioIDRegistry.deviceTokenId(_device);
         IERC721(_ioIDRegistry.ioID()).safeTransferFrom(address(this), _owner, _ioIDTokenId);
-        registerTime[deviceHash] = block.timestamp;
+        ioIds[deviceHash] = _ioIDTokenId;
+        deviceTokens[deviceHash] = _tokenId;
+        owners[deviceHash] = _owner;
+        devices[deviceHash] = _device;
 
-        emit PebbleRegistered(imei, _device, _owner, _tokenId, _ioIDTokenId);
+        emit PebbleRegistered(_imei, _owner, _device, _tokenId, _ioIDTokenId);
     }
 }
