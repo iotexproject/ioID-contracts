@@ -33,7 +33,7 @@ describe('ioID virtual tests', function () {
       }
     }
 
-    deviceNFT = await ethers.deployContract('DeviceNFT');
+    deviceNFT = await ethers.deployContract('DeviceNFT', ["Device NFT", "DFT"]);
     await deviceNFT.configureMinter(deployer, 100);
     deviceNFT.mint(owner.address);
     deviceNFTId = 1n;

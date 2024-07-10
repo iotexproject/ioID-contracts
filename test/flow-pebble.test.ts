@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import { IoID, IoIDStore, IoIDRegistry, DeviceNFT, PebbleRegistration, PebbleProxy } from '../typechain-types';
+import { IoID, IoIDStore, IoIDRegistry, PebbleProxy } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
-import { keccak256 } from 'ethers';
+import { Signer, getBytes, keccak256, solidityPacked } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
 
 describe('ioID pebble tests', function () {
   let deployer, owner: HardhatEthersSigner;
-  let pebbleRegistration: PebbleRegistration;
+  let verifier: Signer;
   let pebbleProxy: PebbleProxy;
   let ioIDStore: IoIDStore;
   let ioID: IoID;
@@ -15,6 +15,7 @@ describe('ioID pebble tests', function () {
 
   before(async () => {
     [deployer, owner] = await ethers.getSigners();
+    verifier = ethers.Wallet.createRandom();
 
     const project = await ethers.deployContract('Project');
     await project.initialize('ioID Project', 'IPN');
@@ -40,13 +41,8 @@ describe('ioID pebble tests', function () {
     await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
     await ioID.setMinter(ioIDRegistry.target);
 
-    pebbleRegistration = await ethers.deployContract('PebbleRegistration');
-    pebbleProxy = await ethers.deployContract('PebbleProxy', [
-      pebbleRegistration.target,
-      ioIDStore.target,
-      projectRegistry.target,
-    ]);
-    await pebbleProxy.initialize('Pebble', 'Pebble Device NFT', 'PNFT', 10, {
+    pebbleProxy = await ethers.deployContract('PebbleProxy', [ioIDStore.target, projectRegistry.target]);
+    await pebbleProxy.initialize(verifier.getAddress(), 'Pebble', 'Pebble Device NFT', 'PNFT', 10, {
       value: ethers.parseEther('1.0') * BigInt(10),
     });
   });
@@ -76,10 +72,27 @@ describe('ioID pebble tests', function () {
 
     const projectId = await pebbleProxy.projectId();
     const imei = 'test imei';
-    await pebbleRegistration.register(imei, device.address, owner.address);
+
+    // TODO: request verify service with: chainid, imei, sn, owner, device
+    const verifyMessage = solidityPacked(
+      ['uint256', 'string', 'address', 'address'],
+      [4690, imei, owner.address, device.address],
+    );
+    const verifySignature = await verifier.signMessage(getBytes(verifyMessage));
 
     expect(await ioID.projectDeviceCount(projectId)).to.equal(0);
-    await pebbleProxy.connect(owner).register(imei, keccak256('0x'), 'http://resolver.did', v, r, s);
+    await pebbleProxy.register(
+      imei,
+      verifySignature,
+      keccak256('0x'), // did hash
+      'http://resolver.did', // did document uri
+      owner.address, // owner
+      device.address, // device
+      v,
+      r,
+      s,
+    );
+
     const did = await ioIDRegistry.documentID(device.address);
 
     expect(await ioID.deviceProject(device.address)).to.equal(projectId);

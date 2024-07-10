@@ -13,6 +13,7 @@ import {DeviceNFT} from "../examples/DeviceNFT.sol";
 
 contract PebbleProxy is Ownable, Initializable, ERC721Holder {
     using ECDSA for bytes32;
+    using ECDSA for bytes;
 
     event NewPebbleProxy(address indexed pebbleNFT, uint256 projectId, uint256 amount);
     event PebbleRegistered(
@@ -108,8 +109,9 @@ contract PebbleProxy is Ownable, Initializable, ERC721Holder {
         bytes32 deviceHash = keccak256(abi.encodePacked(_imei));
         require(ioIds[deviceHash] == 0, "already registered");
 
-        bytes32 verifyMessage = keccak256(abi.encodePacked(block.chainid, _imei, _owner, _device));
-        require(verifyMessage.recover(_verifySignature) == verifier, "invalid verifier signature");
+        bytes memory verifyMessage = abi.encodePacked(block.chainid, _imei, _owner, _device);
+        bytes32 verifyHash = verifyMessage.toEthSignedMessageHash();
+        require(verifyHash.recover(_verifySignature) == verifier, "invalid verifier signature");
 
         uint256 _tokenId = pebbleNFT.mint(address(this));
 
