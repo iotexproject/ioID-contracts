@@ -1,10 +1,6 @@
 import { ethers } from 'hardhat';
 
 async function main() {
-  if (!process.env.PEBBLE_REGISTRATION) {
-    console.log(`Please provide pebble registration address`);
-    return;
-  }
   if (!process.env.IOID_STORE) {
     console.log(`Please provide ioIDStore address`);
     return;
@@ -16,7 +12,6 @@ async function main() {
   const [deployer] = await ethers.getSigners();
 
   const pebbleProxy = await ethers.deployContract('PebbleProxy', [
-    process.env.PEBBLE_REGISTRATION,
     process.env.IOID_STORE,
     process.env.PROJECT_REGISTRY,
   ]);
@@ -25,7 +20,7 @@ async function main() {
 
   const ioIDStore = await ethers.getContractAt('ioIDStore', process.env.IOID_STORE);
   const price = await ioIDStore.price();
-  const tx = await pebbleProxy.initialize('Pebble', 'Pebble Device NFT', 'PNFT', 10, {
+  const tx = await pebbleProxy.initialize(deployer.address, 'Pebble Testnet', 'Pebble Device NFT', 'PNFT', 10, {
     value: price * BigInt(10),
   });
   await tx.wait();

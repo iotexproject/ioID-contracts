@@ -28,5 +28,5 @@ ioIDRegistry deployed to 0x06b3Fcda51e01EE96e8E8873F0302381c955Fddd
 3. Pebble
 
 ```
-Pebble proxy deployed to 0xb6ef9b08fe03c2454396e85232b9b7b8571c0145
+Pebble proxy deployed to 0xf3005d4B02286aC07412E045dfCd3a03b2e30bB2
 ```

@@ -26,8 +26,8 @@ contract PebbleProxy is Ownable, Initializable, ERC721Holder {
     event VerifierChanged(address indexed oldVerifier, address indexed newVerifier);
 
     address public verifier;
-    address public projectRegistry;
-    address public ioIDStore;
+    address public immutable projectRegistry;
+    address public immutable ioIDStore;
     uint256 public projectId;
     DeviceNFT public pebbleNFT;
 
