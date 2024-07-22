@@ -25,8 +25,8 @@ ioID deployed to 0x5688aF9f5b3aaf6c92d1A31067b7DcB31B103CF7
 ioIDRegistry deployed to 0x06b3Fcda51e01EE96e8E8873F0302381c955Fddd
 ```
 
-3. Pebble
+3. Factory
 
 ```
-Pebble proxy deployed to 0xf3005d4B02286aC07412E045dfCd3a03b2e30bB2
+UniversalFactory deployed to 0xc89A23B31A138e8D246E1A1833Ad5A4c23A37310
 ```
