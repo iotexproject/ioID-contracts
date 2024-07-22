@@ -1,28 +1,21 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import {
-  IoID,
-  IoIDStore,
-  IoIDRegistry,
-  VerifyingProxy,
-  VerifyingProxy__factory,
-  UniversalFactory,
-} from '../typechain-types';
+import { IoID, IoIDStore, IoIDRegistry, DeviceNFT } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
-import { Signer, getBytes, keccak256, solidityPacked } from 'ethers';
+import { keccak256 } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
 
-describe('ioID pebble tests', function () {
-  let deployer, owner: HardhatEthersSigner;
-  let verifier: Signer;
-  let proxy: VerifyingProxy;
+describe('ioID virtual tests', function () {
+  let deployer, projectOwner, owner, proxy: HardhatEthersSigner;
   let ioIDStore: IoIDStore;
   let ioID: IoID;
   let ioIDRegistry: IoIDRegistry;
+  let projectId: bigint;
+  let deviceNFT: DeviceNFT;
+  let deviceNFTId: bigint;
 
   before(async () => {
-    [deployer, owner] = await ethers.getSigners();
-    verifier = ethers.Wallet.createRandom();
+    [deployer, projectOwner, owner, proxy] = await ethers.getSigners();
 
     const project = await ethers.deployContract('Project');
     await project.initialize('ioID Project', 'IPN');
@@ -30,8 +23,24 @@ describe('ioID pebble tests', function () {
     await projectRegistry.initialize(project.target);
     await project.setMinter(projectRegistry.target);
 
+    const tx = await projectRegistry.connect(projectOwner)['register(string,uint8)']('hello project', 1);
+    // const tx = await projectRegistry.connect(projectOwner).register();
+    const receipt = await tx.wait();
+    for (let i = 0; i < receipt!.logs.length; i++) {
+      const log = receipt!.logs[i];
+      if (log.topics[0] == '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef') {
+        projectId = BigInt(log.topics[3]);
+      }
+    }
+
+    deviceNFT = await ethers.deployContract('DeviceNFT', ['Device NFT', 'DFT']);
+    await deviceNFT.configureMinter(deployer, 100);
+    deviceNFT.mint(owner.address);
+    deviceNFTId = 1n;
+
     ioIDStore = await ethers.deployContract('ioIDStore');
     await ioIDStore.initialize(project.target, ethers.parseEther('1.0'));
+    await ioIDStore.connect(projectOwner).setDeviceContract(projectId, deviceNFT.target);
 
     ioID = await ethers.deployContract('ioID');
     await ioID.initialize(
@@ -47,19 +56,6 @@ describe('ioID pebble tests', function () {
 
     await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
     await ioID.setMinter(ioIDRegistry.target);
-
-    const verifyingProxyFactory = await ethers.getContractFactory('VerifyingProxy');
-    const factory = await ethers.deployContract('UniversalFactory', [ioIDStore.target, projectRegistry.target]);
-    const tx = await factory.create(0, verifier.getAddress(), 'Pebble', 'Pebble Device NFT', 'PNFT', 10, {
-      value: ethers.parseEther('1.0') * BigInt(10),
-    });
-    const receipt = await tx.wait();
-    for (let i = 0; i < receipt!.logs.length; i++) {
-      const log = receipt!.logs[i];
-      if (log.topics[0] == '0x944661ed150e69c33316bf899f80879602cc18929538a726d96c30bd7c9a7fc8') {
-        proxy = verifyingProxyFactory.attach(log.args[0]) as VerifyingProxy;
-      }
-    }
   });
 
   it('regsiter', async () => {
@@ -80,33 +76,23 @@ describe('ioID pebble tests', function () {
     const nonce = await ioIDRegistry.nonces(device.address);
 
     // @ts-ignore
-    const signature = await device.signTypedData(domain, types, { owner: proxy.target, nonce: nonce });
+    const signature = await device.signTypedData(domain, types, { owner: owner.address, nonce: nonce });
     const r = signature.substring(0, 66);
     const s = '0x' + signature.substring(66, 130);
     const v = '0x' + signature.substring(130);
 
-    const projectId = await proxy.projectId();
-
-    // request verify service with: chainid, owner, device
-    const verifyMessage = solidityPacked(['uint256', 'address', 'address'], [4690, owner.address, device.address]);
-    const verifySignature = await verifier.signMessage(getBytes(verifyMessage));
-
     expect(await ioID.projectDeviceCount(projectId)).to.equal(0);
-    await proxy.register(
-      verifySignature,
-      keccak256('0x'), // did hash
-      'http://resolver.did', // did document uri
-      owner.address, // owner
-      device.address, // device
-      v,
-      r,
-      s,
-    );
-
+    await deviceNFT.connect(owner).approve(ioIDRegistry.target, deviceNFTId);
+    await ioIDRegistry
+      .connect(proxy)
+      [
+        'register(address,uint256,address,address,bytes32,string,uint8,bytes32,bytes32)'
+      ](deviceNFT.target, deviceNFTId, owner.address, device.address, keccak256('0x'), 'http://resolver.did', v, r, s, { value: ethers.parseEther('1.0') });
     const did = await ioIDRegistry.documentID(device.address);
 
     expect(await ioID.deviceProject(device.address)).to.equal(projectId);
     expect(await ioID.projectDeviceCount(projectId)).to.equal(1);
+    expect(await ioID.ownerOf(1)).to.equal(owner.address);
 
     const ids = await ioID.projectIDs(projectId, '0x0000000000000000000000000000000000000001', 10);
     expect(ids.array.length).to.equal(1);

@@ -16,7 +16,7 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
 
     mapping(address => bool) internal minters;
     mapping(address => uint256) internal minterAllowed;
-    uint256 nextId;
+    uint256 public total;
     mapping(uint256 => uint256) internal weights;
 
     constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
@@ -66,7 +66,7 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
             minterAllowed[msg.sender] -= 1;
         }
 
-        uint256 _tokenId = ++nextId;
+        uint256 _tokenId = ++total;
         _mint(_to, _tokenId);
         if (_weight != 0) {
             weights[_tokenId] = _weight;
