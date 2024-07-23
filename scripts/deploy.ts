@@ -64,7 +64,7 @@ async function main() {
   );
   console.log(`ioIDRegistry deployed to ${ioIDRegistry.target}`);
 
-  console.log(`Set ioIDFactory ioIDRegistry to ${ioIDRegistry.target}`);
+  console.log(`Set ioIDStore ioIDRegistry to ${ioIDRegistry.target}`);
   tx = await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
   await tx.wait();
 

@@ -4,9 +4,9 @@ pragma solidity ^0.8.19;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
-import {ProjectType} from "./interfaces/IProject.sol";
+import {IProject} from "./interfaces/IProject.sol";
 
-contract Project is OwnableUpgradeable, ERC721Upgradeable {
+contract Project is IProject, OwnableUpgradeable, ERC721Upgradeable {
     event SetMinter(address indexed minter);
     event SetName(uint256 indexed projectId, string name);
 
@@ -15,7 +15,7 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
     bytes32 constant EMPTY_NAME_HASH = keccak256(abi.encodePacked(""));
     mapping(bytes32 => bool) nameHashes;
     mapping(uint256 => string) names;
-    mapping(uint256 => ProjectType) types;
+    mapping(uint256 => uint8) types;
 
     function initialize(string calldata _name, string calldata _symbol) public initializer {
         __Ownable_init();
@@ -32,18 +32,14 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
     }
 
     function mint(address _owner, string calldata _name) external returns (uint256 projectId_) {
-        return _mintProject(_owner, _name, ProjectType.Hardware);
+        return _mintProject(_owner, _name, 0);
     }
 
-    function mint(address _owner, string calldata _name, ProjectType _type) external returns (uint256) {
+    function mint(address _owner, string calldata _name, uint8 _type) external returns (uint256) {
         return _mintProject(_owner, _name, _type);
     }
 
-    function _mintProject(
-        address _owner,
-        string calldata _name,
-        ProjectType _type
-    ) internal returns (uint256 projectId_) {
+    function _mintProject(address _owner, string calldata _name, uint8 _type) internal returns (uint256 projectId_) {
         require(msg.sender == minter, "not minter");
         bytes32 _nameHash = keccak256(abi.encodePacked(_name));
         require(_nameHash != EMPTY_NAME_HASH, "empty name");
@@ -63,7 +59,7 @@ contract Project is OwnableUpgradeable, ERC721Upgradeable {
         return names[_projectId];
     }
 
-    function projectType(uint256 _projectId) external view returns (ProjectType) {
+    function projectType(uint256 _projectId) external view returns (uint8) {
         _requireMinted(_projectId);
         return types[_projectId];
     }

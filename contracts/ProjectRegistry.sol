@@ -5,7 +5,7 @@ import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Ini
 
 import "./interfaces/IProject.sol";
 
-contract ProjectRegistry is Initializable {
+contract ProjectRegistry is Initializable, IProjectRegistry {
     IProject public project;
 
     function initialize(address _project) public initializer {
@@ -21,7 +21,7 @@ contract ProjectRegistry is Initializable {
         return project.mint(msg.sender, _name);
     }
 
-    function register(string calldata _name, ProjectType _type) external payable returns (uint256) {
+    function register(string calldata _name, uint8 _type) external payable override returns (uint256) {
         return project.mint(msg.sender, _name, _type);
     }
 }

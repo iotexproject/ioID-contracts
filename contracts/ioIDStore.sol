@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
 import "./interfaces/IProject.sol";
@@ -27,10 +28,9 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     }
 
     function applyIoIDs(uint256 _projectId, uint256 _amount) external payable override {
-        IProject _project = IProject(project);
-        require(_project.projectType(_projectId) == ProjectType.Hardware, "only hardware project");
+        require(IERC721(project).ownerOf(_projectId) == msg.sender, "invald project owner");
+        require(IProject(project).projectType(_projectId) == 0, "only hardware project");
         require(msg.value >= _amount * price, "insufficient fund");
-        require(_project.ownerOf(_projectId) == msg.sender, "invald project owner");
         unchecked {
             projectAppliedAmount[_projectId] += _amount;
         }
@@ -38,7 +38,7 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     }
 
     function setDeviceContract(uint256 _projectId, address _contract) external override {
-        require(IProject(project).ownerOf(_projectId) == msg.sender, "invald project owner");
+        require(IERC721(project).ownerOf(_projectId) == msg.sender, "invald project owner");
         require(projectDeviceContract[_projectId] == address(0), "project setted");
         require(deviceContractProject[_contract] == 0, "contract setted");
 
@@ -57,7 +57,7 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
 
     function activeIoID(uint256 _projectId) external payable override {
         require(ioIDRegistry == msg.sender, "only ioIDRegistry");
-        if (IProject(project).projectType(_projectId) == ProjectType.Hardware) {
+        if (IProject(project).projectType(_projectId) == 0) {
             require(projectAppliedAmount[_projectId] > projectActivedAmount[_projectId], "insufficient ioID");
         } else {
             require(msg.value >= price, "insufficient fund");

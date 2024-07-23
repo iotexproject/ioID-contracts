@@ -6,7 +6,7 @@ async function main() {
     return;
   }
   if (!process.env.PROJECT_REGISTRY) {
-    console.log(`Please provide project registrar address`);
+    console.log(`Please provide project registry address`);
     return;
   }
   const [deployer] = await ethers.getSigners();

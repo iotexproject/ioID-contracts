@@ -15,8 +15,17 @@ contract UniversalFactory {
         projectRegistry = _projectRegistry;
     }
 
+    function create() external payable returns (address) {
+        VerifyingProxy proxy = new VerifyingProxy(ioIDStore, projectRegistry);
+
+        proxy.transferOwnership(msg.sender);
+        emit CreatedProxy(address(proxy));
+
+        return address(proxy);
+    }
+
     function create(
-        ProjectType _type,
+        uint8 _type,
         address _verifier,
         string calldata _projectName,
         string calldata _name,

@@ -5,6 +5,7 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import "../interfaces/IProject.sol";
 import "../interfaces/IioIDStore.sol";
@@ -20,9 +21,10 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
     event Registered(address indexed owner, address indexed device, uint256 deviceTokenId, uint256 ioIDTokenID);
     event VerifierChanged(address indexed oldVerifier, address indexed newVerifier);
 
-    address public verifier;
     address public immutable projectRegistry;
     address public immutable ioIDStore;
+
+    address public verifier;
     uint256 public projectId;
     DeviceNFT public deviceNFT;
 
@@ -32,7 +34,7 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
     }
 
     function initialize(
-        ProjectType _type,
+        uint8 _type,
         address _verifier,
         string calldata _projectName,
         string calldata _name,
@@ -51,11 +53,29 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
         projectId = IProjectRegistry(projectRegistry).register(_projectName, _type);
 
         _ioIDStore.setDeviceContract(projectId, address(deviceNFT));
-        if (ProjectType.Hardware == _type) {
+        if (0 == _type) {
             _ioIDStore.applyIoIDs{value: msg.value}(projectId, _amount);
         }
 
         emit VerifierChanged(address(0), _verifier);
+    }
+
+    function initialize(uint256 _projectId, address _verifier, address _deviceNFT, uint256 _amount) external onlyOwner {
+        deviceNFT = DeviceNFT(_deviceNFT);
+        require(
+            IERC721(address(IProjectRegistry(projectRegistry).project())).ownerOf(_projectId) == address(this) &&
+                deviceNFT.owner() == address(this),
+            "invalid owner"
+        );
+
+        projectId = _projectId;
+        verifier = _verifier;
+        deviceNFT.configureMinter(address(this), _amount);
+        deviceNFT.setApprovalForAll(IioIDStore(ioIDStore).ioIDRegistry(), true);
+    }
+
+    function incrementMinterAllowance(uint256 _amount) external onlyOwner {
+        deviceNFT.incrementMinterAllowance(address(this), _amount);
     }
 
     function changeVerifier(address _verifier) external onlyOwner {
@@ -66,16 +86,22 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
     }
 
     function applyIoIDs(uint256 _amount) external payable onlyOwner {
+        require(0 == IProjectRegistry(projectRegistry).project().projectType(projectId), "only hardware project");
+        deviceNFT.incrementMinterAllowance(address(this), _amount);
         IioIDStore(ioIDStore).applyIoIDs{value: msg.value}(projectId, _amount);
     }
 
     function migrate(address _owner) external onlyOwner {
         deviceNFT.transferOwnership(_owner);
-        IProjectRegistry(projectRegistry).project().safeTransferFrom(address(this), _owner, projectId);
+        IERC721(address(IProjectRegistry(projectRegistry).project())).safeTransferFrom(
+            address(this),
+            _owner,
+            projectId
+        );
     }
 
     function approveProjectNFT(address _to) external onlyOwner {
-        IProjectRegistry(projectRegistry).project().approve(_to, projectId);
+        IERC721(address(IProjectRegistry(projectRegistry).project())).approve(_to, projectId);
     }
 
     function register(
