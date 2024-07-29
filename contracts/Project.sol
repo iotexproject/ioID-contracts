@@ -9,6 +9,7 @@ import {IProject} from "./interfaces/IProject.sol";
 contract Project is IProject, OwnableUpgradeable, ERC721Upgradeable {
     event SetMinter(address indexed minter);
     event SetName(uint256 indexed projectId, string name);
+    event AddMetadata(uint256 indexed projectId, string name, bytes32 key, bytes value);
 
     address public minter;
     uint256 nextProjectId;
@@ -16,6 +17,7 @@ contract Project is IProject, OwnableUpgradeable, ERC721Upgradeable {
     mapping(bytes32 => bool) nameHashes;
     mapping(uint256 => string) names;
     mapping(uint256 => uint8) types;
+    mapping(uint256 => mapping(bytes32 => bytes)) _metadata;
 
     function initialize(string calldata _name, string calldata _symbol) public initializer {
         __Ownable_init();
@@ -62,6 +64,20 @@ contract Project is IProject, OwnableUpgradeable, ERC721Upgradeable {
     function projectType(uint256 _projectId) external view returns (uint8) {
         _requireMinted(_projectId);
         return types[_projectId];
+    }
+
+    function metadata(uint256 _projectId, string calldata _name) external view returns (bytes memory) {
+        _requireMinted(_projectId);
+        bytes32 _key = keccak256(abi.encodePacked(_name));
+        return _metadata[_projectId][_key];
+    }
+
+    function setMetadata(uint256 _projectId, string calldata _name, bytes calldata _value) external {
+        require(msg.sender == ownerOf(_projectId), "invalid owner");
+        bytes32 _key = keccak256(abi.encodePacked(_name));
+
+        _metadata[_projectId][_key] = _value;
+        emit AddMetadata(_projectId, _name, _key, _value);
     }
 
     function setName(uint256 _projectId, string calldata _name) external {

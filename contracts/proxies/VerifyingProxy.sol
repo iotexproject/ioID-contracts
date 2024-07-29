@@ -91,6 +91,14 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
         IioIDStore(ioIDStore).applyIoIDs{value: msg.value}(projectId, _amount);
     }
 
+    function setName(string calldata _name) external onlyOwner {
+        IProjectRegistry(projectRegistry).project().setName(projectId, _name);
+    }
+
+    function setMetadata(string calldata _name, bytes calldata _value) external onlyOwner {
+        IProjectRegistry(projectRegistry).project().setMetadata(projectId, _name, _value);
+    }
+
     function migrate(address _owner) external onlyOwner {
         deviceNFT.transferOwnership(_owner);
         IERC721(address(IProjectRegistry(projectRegistry).project())).safeTransferFrom(
