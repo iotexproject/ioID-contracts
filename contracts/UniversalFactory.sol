@@ -1,27 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "@openzeppelin/contracts/proxy/Clones.sol";
+
 import "./interfaces/IProject.sol";
 import "./proxies/VerifyingProxy.sol";
 
 contract UniversalFactory {
+    using Clones for address;
+
     event CreatedProxy(address indexed proxy);
 
-    address public immutable projectRegistry;
-    address public immutable ioIDStore;
+    address public immutable proxyImplementation;
 
-    constructor(address _ioIDStore, address _projectRegistry) {
-        ioIDStore = _ioIDStore;
-        projectRegistry = _projectRegistry;
-    }
-
-    function create() external payable returns (address) {
-        VerifyingProxy proxy = new VerifyingProxy(ioIDStore, projectRegistry);
-
-        proxy.transferOwnership(msg.sender);
-        emit CreatedProxy(address(proxy));
-
-        return address(proxy);
+    constructor(address _proxyImplementation) {
+        proxyImplementation = _proxyImplementation;
     }
 
     function create(
@@ -32,7 +25,9 @@ contract UniversalFactory {
         string calldata _symbol,
         uint256 _amount
     ) external payable returns (address) {
-        VerifyingProxy proxy = new VerifyingProxy(ioIDStore, projectRegistry);
+        bytes32 _salt = keccak256(abi.encodePacked(msg.sender, _type, _name));
+        address _instance = proxyImplementation.cloneDeterministic(_salt);
+        VerifyingProxy proxy = VerifyingProxy(_instance);
 
         proxy.initialize{value: msg.value}(_type, _verifier, _projectName, _name, _symbol, _amount);
         proxy.transferOwnership(msg.sender);

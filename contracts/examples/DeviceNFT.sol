@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {ERC721Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
 
 import "../interfaces/IDeviceNFT.sol";
 
-contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
+contract DeviceNFT is IDeviceNFT, ERC721Upgradeable, OwnableUpgradeable {
     event MinterConfigured(address indexed minter, uint256 minterAllowedAmount);
     event MinterRemoved(address indexed minter);
     event WeightSetted(uint256 tokenId, uint256 weight);
@@ -19,7 +19,10 @@ contract DeviceNFT is IDeviceNFT, ERC721, Ownable {
     uint256 public total;
     mapping(uint256 => uint256) internal weights;
 
-    constructor(string memory _name, string memory _symbol) ERC721(_name, _symbol) {}
+    function initialize(string memory _name, string memory _symbol) external initializer {
+        __Ownable_init();
+        __ERC721_init(_name, _symbol);
+    }
 
     function minterAllowance(address minter) external view returns (uint256) {
         return minterAllowed[minter];

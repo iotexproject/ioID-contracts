@@ -1,36 +1,69 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+
 import "../interfaces/IProject.sol";
+import "../interfaces/IioID.sol";
 import "../interfaces/IioIDStore.sol";
 import "../interfaces/IioIDRegistry.sol";
-import {DeviceNFT} from "../examples/DeviceNFT.sol";
 
-contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
+interface IDeviceNFT {
+    function weight(uint256 tokenId) external view returns (uint256);
+    function owner() external view returns (address);
+
+    function initialize(string memory _name, string memory _symbol) external;
+    function configureMinter(address _minter, uint256 _minterAllowedAmount) external;
+    function setApprovalForAll(address operator, bool approved) external;
+    function incrementMinterAllowance(address _minter, uint256 _allowanceIncrement) external;
+    function transferOwnership(address newOwner) external;
+    function mint(address _to) external returns (uint256);
+}
+
+interface IERC6551Executable {
+    function execute(
+        address to,
+        uint256 value,
+        bytes calldata data,
+        uint8 operation
+    ) external payable returns (bytes memory);
+}
+
+interface IDeviceGauge {
+    function stakingToken() external view returns (address);
+
+    function deposit(uint256 _tokenId, address _recipient) external;
+}
+
+contract VerifyingProxy is OwnableUpgradeable, ERC721Holder {
     using ECDSA for bytes32;
     using ECDSA for bytes;
+    using Clones for address;
 
     string public constant VERSION = "0.0.1";
 
     event Registered(address indexed owner, address indexed device, uint256 deviceTokenId, uint256 ioIDTokenID);
     event VerifierChanged(address indexed oldVerifier, address indexed newVerifier);
+    event DeviceGaugeSetted(address indexed gauge);
 
     address public immutable projectRegistry;
     address public immutable ioIDStore;
+    address public immutable deviceNFTImplementation;
 
     address public verifier;
     uint256 public projectId;
-    DeviceNFT public deviceNFT;
+    IDeviceNFT public deviceNFT;
+    address public deviceGauge;
 
-    constructor(address _ioIDStore, address _projectRegistry) {
+    constructor(address _ioIDStore, address _projectRegistry, address _deviceNFTImplementation) {
         ioIDStore = _ioIDStore;
         projectRegistry = _projectRegistry;
+        deviceNFTImplementation = _deviceNFTImplementation;
     }
 
     function initialize(
@@ -42,11 +75,16 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
         uint256 _amount
     ) external payable initializer {
         require(_verifier != address(0), "zero address");
+        __Ownable_init();
 
         verifier = _verifier;
         IioIDStore _ioIDStore = IioIDStore(ioIDStore);
 
-        deviceNFT = new DeviceNFT(_name, _symbol);
+        bytes32 _salt = keccak256(abi.encodePacked(msg.sender, _type, _name));
+        address _instance = deviceNFTImplementation.cloneDeterministic(_salt);
+
+        deviceNFT = IDeviceNFT(_instance);
+        deviceNFT.initialize(_name, _symbol);
         deviceNFT.configureMinter(address(this), _amount);
         deviceNFT.setApprovalForAll(_ioIDStore.ioIDRegistry(), true);
 
@@ -61,7 +99,7 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
     }
 
     function initialize(uint256 _projectId, address _verifier, address _deviceNFT, uint256 _amount) external onlyOwner {
-        deviceNFT = DeviceNFT(_deviceNFT);
+        deviceNFT = IDeviceNFT(_deviceNFT);
         require(
             IERC721(address(IProjectRegistry(projectRegistry).project())).ownerOf(_projectId) == address(this) &&
                 deviceNFT.owner() == address(this),
@@ -112,6 +150,14 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
         IERC721(address(IProjectRegistry(projectRegistry).project())).approve(_to, projectId);
     }
 
+    function setDeviceGauge(address _gauge) external onlyOwner {
+        require(deviceGauge == address(0), "already setted");
+        require(IDeviceGauge(_gauge).stakingToken() == address(deviceNFT), "invalid staking token");
+
+        deviceGauge = _gauge;
+        emit DeviceGaugeSetted(_gauge);
+    }
+
     function register(
         bytes calldata _verifySignature,
         bytes32 _hash,
@@ -142,6 +188,15 @@ contract VerifyingProxy is Ownable, Initializable, ERC721Holder {
         );
 
         uint256 _ioIDTokenId = _ioIDRegistry.deviceTokenId(_device);
+
+        if (deviceGauge != address(0)) {
+            (address _walletAddr, ) = IioID(_ioIDRegistry.ioID()).wallet(_ioIDTokenId);
+            IERC6551Executable _wallet = IERC6551Executable(_walletAddr);
+
+            _wallet.execute(address(deviceNFT), 0, abi.encodeCall(IERC721.approve, (deviceGauge, _tokenId)), 0);
+            _wallet.execute(deviceGauge, 0, abi.encodeCall(IDeviceGauge.deposit, (_tokenId, _owner)), 0);
+        }
+
         IERC721(_ioIDRegistry.ioID()).safeTransferFrom(address(this), _owner, _ioIDTokenId);
 
         emit Registered(_owner, _device, _tokenId, _ioIDTokenId);

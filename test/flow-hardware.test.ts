@@ -1,35 +1,37 @@
 import { expect } from 'chai';
 import { ethers } from 'hardhat';
-import {
-  IoID,
-  IoIDStore,
-  IoIDRegistry,
-  VerifyingProxy,
-  VerifyingProxy__factory,
-  UniversalFactory,
-} from '../typechain-types';
+import { IoID, IoIDStore, IoIDRegistry, VerifyingProxy, DummyDeviceGauge } from '../typechain-types';
 import { HardhatEthersSigner } from '@nomicfoundation/hardhat-ethers/signers';
 import { Signer, getBytes, keccak256, solidityPacked } from 'ethers';
 import { TokenboundClient } from '@tokenbound/sdk';
+import { DeviceNFT } from '../typechain-types/contracts/DeviceNFT.sol';
 
 describe('ioID pebble tests', function () {
   let deployer, owner: HardhatEthersSigner;
+  let chainId: number;
   let verifier: Signer;
   let proxy: VerifyingProxy;
   let ioIDStore: IoIDStore;
   let ioID: IoID;
   let ioIDRegistry: IoIDRegistry;
+  let deviceNFT: DeviceNFT;
+  let deviceGauge: DummyDeviceGauge;
 
   before(async () => {
     [deployer, owner] = await ethers.getSigners();
+
     verifier = ethers.Wallet.createRandom();
+
+    const network = await ethers.provider.getNetwork();
+
+    chainId = Number(network.chainId.toString());
 
     const project = await ethers.deployContract('Project');
     await project.initialize('ioID Project', 'IPN');
+
     const projectRegistry = await ethers.deployContract('ProjectRegistry');
     await projectRegistry.initialize(project.target);
     await project.setMinter(projectRegistry.target);
-
     ioIDStore = await ethers.deployContract('ioIDStore');
     await ioIDStore.initialize(project.target, ethers.parseEther('1.0'));
 
@@ -37,7 +39,7 @@ describe('ioID pebble tests', function () {
     await ioID.initialize(
       deployer.address, // minter
       '0x000000006551c19487814612e58FE06813775758', // wallet registry
-      '0x1d1C779932271e9Dc683d5373E84Fa4239F2b3fb', // wallet implementation
+      '0x41C8f39463A868d3A88af00cd0fe7102F30E44eC', // wallet implementation
       'ioID',
       'ioID',
     );
@@ -48,8 +50,15 @@ describe('ioID pebble tests', function () {
     await ioIDStore.setIoIDRegistry(ioIDRegistry.target);
     await ioID.setMinter(ioIDRegistry.target);
 
+    const deviceNFTImplementation = await ethers.deployContract('DeviceNFT');
+    const proxyImplementation = await ethers.deployContract('VerifyingProxy', [
+      ioIDStore.target,
+      projectRegistry.target,
+      deviceNFTImplementation.target,
+    ]);
+
     const verifyingProxyFactory = await ethers.getContractFactory('VerifyingProxy');
-    const factory = await ethers.deployContract('UniversalFactory', [ioIDStore.target, projectRegistry.target]);
+    const factory = await ethers.deployContract('UniversalFactory', [proxyImplementation.target]);
     const tx = await factory.create(0, verifier.getAddress(), 'Pebble', 'Pebble Device NFT', 'PNFT', 10, {
       value: ethers.parseEther('1.0') * BigInt(10),
     });
@@ -60,6 +69,13 @@ describe('ioID pebble tests', function () {
         proxy = verifyingProxyFactory.attach(log.args[0]) as VerifyingProxy;
       }
     }
+
+    const deviceNFTAddr = await proxy.deviceNFT();
+    const deviceNFTFactory = await ethers.getContractFactory('DeviceNFT');
+    deviceNFT = deviceNFTFactory.attach(deviceNFTAddr) as DeviceNFT;
+    deviceGauge = await ethers.deployContract('DummyDeviceGauge', [deviceNFT]);
+
+    await proxy.setDeviceGauge(deviceGauge.target);
   });
 
   it('regsiter', async () => {
@@ -67,7 +83,7 @@ describe('ioID pebble tests', function () {
     const domain = {
       name: 'ioIDRegistry',
       version: '1',
-      chainId: 4690,
+      chainId: chainId,
       verifyingContract: ioIDRegistry.target,
     };
     const types = {
@@ -88,7 +104,7 @@ describe('ioID pebble tests', function () {
     const projectId = await proxy.projectId();
 
     // request verify service with: chainid, owner, device
-    const verifyMessage = solidityPacked(['uint256', 'address', 'address'], [4690, owner.address, device.address]);
+    const verifyMessage = solidityPacked(['uint256', 'address', 'address'], [chainId, owner.address, device.address]);
     const verifySignature = await verifier.signMessage(getBytes(verifyMessage));
 
     expect(await ioID.projectDeviceCount(projectId)).to.equal(0);
@@ -102,6 +118,8 @@ describe('ioID pebble tests', function () {
       r,
       s,
     );
+
+    expect(await deviceNFT.ownerOf(1)).to.equal(deviceGauge.target);
 
     const did = await ioIDRegistry.documentID(device.address);
 
@@ -127,7 +145,7 @@ describe('ioID pebble tests', function () {
     // @ts-ignore
     const tokenboundClient = new TokenboundClient({
       chain: {
-        id: 4690,
+        id: chainId,
         name: 'IoTeX Testnet',
         network: 'testnet',
         rpcUrls: {
