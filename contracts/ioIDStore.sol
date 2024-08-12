@@ -28,7 +28,6 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     }
 
     function applyIoIDs(uint256 _projectId, uint256 _amount) external payable override {
-        require(IERC721(project).ownerOf(_projectId) == msg.sender, "invald project owner");
         require(IProject(project).projectType(_projectId) == 0, "only hardware project");
         require(msg.value >= _amount * price, "insufficient fund");
         unchecked {
