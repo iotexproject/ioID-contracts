@@ -39,7 +39,7 @@ describe('ioID pebble tests', function () {
     await ioID.initialize(
       deployer.address, // minter
       '0x000000006551c19487814612e58FE06813775758', // wallet registry
-      '0x41C8f39463A868d3A88af00cd0fe7102F30E44eC', // wallet implementation
+      '0x1d1C779932271e9Dc683d5373E84Fa4239F2b3fb', // wallet implementation
       'ioID',
       'ioID',
     );
@@ -120,6 +120,7 @@ describe('ioID pebble tests', function () {
     );
 
     expect(await deviceNFT.ownerOf(1)).to.equal(deviceGauge.target);
+    expect(await deviceGauge.deviceOwner(1)).to.equal(owner.address);
 
     const did = await ioIDRegistry.documentID(device.address);
 

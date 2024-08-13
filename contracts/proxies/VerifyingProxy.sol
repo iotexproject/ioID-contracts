@@ -151,7 +151,6 @@ contract VerifyingProxy is OwnableUpgradeable, ERC721Holder {
     }
 
     function setDeviceGauge(address _gauge) external onlyOwner {
-        require(deviceGauge == address(0), "already setted");
         require(IDeviceGauge(_gauge).stakingToken() == address(deviceNFT), "invalid staking token");
 
         deviceGauge = _gauge;

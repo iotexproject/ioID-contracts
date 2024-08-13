@@ -28,5 +28,5 @@ ioIDRegistry deployed to 0x0A7e595C7889dF3652A19aF52C18377bF17e027D
 3. Factory
 
 ```
-UniversalFactory deployed to 0xb4AabBEdB2AB88F0DA512A66621E90Ac68FAaa31
+UniversalFactory deployed to 0xf16123373440e01C10a59CDe9556709A139526c8
 ```

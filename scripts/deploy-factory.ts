@@ -11,10 +11,16 @@ async function main() {
   }
   const [deployer] = await ethers.getSigners();
 
-  const factory = await ethers.deployContract('UniversalFactory', [
+  const deviceNFTImplementation = await ethers.deployContract('DeviceNFT');
+  await deviceNFTImplementation.waitForDeployment();
+  const proxyImplementation = await ethers.deployContract('VerifyingProxy', [
     process.env.IOID_STORE,
     process.env.PROJECT_REGISTRY,
+    deviceNFTImplementation.target,
   ]);
+  await proxyImplementation.waitForDeployment();
+
+  const factory = await ethers.deployContract('UniversalFactory', [proxyImplementation.target]);
   await factory.waitForDeployment();
   console.log(`UniversalFactory deployed to ${factory.target}`);
 }
