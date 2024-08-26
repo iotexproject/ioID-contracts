@@ -22,6 +22,7 @@ interface IDeviceNFT {
     function setApprovalForAll(address operator, bool approved) external;
     function incrementMinterAllowance(address _minter, uint256 _allowanceIncrement) external;
     function transferOwnership(address newOwner) external;
+    function setBaseURI(string calldata _uri) external;
     function mint(address _to) external returns (uint256);
 }
 
@@ -98,7 +99,12 @@ contract VerifyingProxy is OwnableUpgradeable, ERC721Holder {
         emit VerifierChanged(address(0), _verifier);
     }
 
-    function initialize(uint256 _projectId, address _verifier, address _deviceNFT, uint256 _amount) external onlyOwner {
+    function initialize(
+        uint256 _projectId,
+        address _verifier,
+        address _deviceNFT,
+        uint256 _amount
+    ) external initializer onlyOwner {
         deviceNFT = IDeviceNFT(_deviceNFT);
         require(
             IERC721(address(IProjectRegistry(projectRegistry).project())).ownerOf(_projectId) == address(this) &&
@@ -135,6 +141,10 @@ contract VerifyingProxy is OwnableUpgradeable, ERC721Holder {
 
     function setMetadata(string calldata _name, bytes calldata _value) external onlyOwner {
         IProjectRegistry(projectRegistry).project().setMetadata(projectId, _name, _value);
+    }
+
+    function setBaseURI(string calldata _uri) external onlyOwner {
+        deviceNFT.setBaseURI(_uri);
     }
 
     function migrate(address _owner) external onlyOwner {

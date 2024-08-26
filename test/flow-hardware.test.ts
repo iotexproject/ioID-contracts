@@ -7,7 +7,9 @@ import { TokenboundClient } from '@tokenbound/sdk';
 import { DeviceNFT } from '../typechain-types/contracts/DeviceNFT.sol';
 
 describe('ioID pebble tests', function () {
-  let deployer, owner: HardhatEthersSigner;
+  let deployer: HardhatEthersSigner;
+  let owner: HardhatEthersSigner;
+  let user: HardhatEthersSigner;
   let chainId: number;
   let verifier: Signer;
   let proxy: VerifyingProxy;
@@ -18,7 +20,7 @@ describe('ioID pebble tests', function () {
   let deviceGauge: DummyDeviceGauge;
 
   before(async () => {
-    [deployer, owner] = await ethers.getSigners();
+    [deployer, owner, user] = await ethers.getSigners();
 
     verifier = ethers.Wallet.createRandom();
 
@@ -79,6 +81,8 @@ describe('ioID pebble tests', function () {
   });
 
   it('regsiter', async () => {
+    await expect(deviceNFT.connect(user).mint(user.address)).to.be.revertedWith('exceeds minterAllowance');
+
     const device = ethers.Wallet.createRandom();
     const domain = {
       name: 'ioIDRegistry',
