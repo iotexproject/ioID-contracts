@@ -16,6 +16,7 @@ interface IioIDStore {
 
     function projectAppliedAmount(uint256 _projectId) external view returns (uint256);
     function projectActivedAmount(uint256 _projectId) external view returns (uint256);
+    function feeReceiver() external view returns (address);
 
     function ioIDRegistry() external view returns (address);
 

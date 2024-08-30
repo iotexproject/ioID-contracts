@@ -9,6 +9,7 @@ import "./interfaces/IioIDStore.sol";
 
 contract ioIDStore is IioIDStore, OwnableUpgradeable {
     event SetIoIDRegistry(address indexed ioIDRegistry);
+    event ChangeFeeReceiver(address indexed feeReceiver);
 
     address public project;
     address public override ioIDRegistry;
@@ -17,6 +18,7 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     mapping(address => uint256) public override deviceContractProject;
     mapping(uint256 => uint256) public override projectAppliedAmount;
     mapping(uint256 => uint256) public override projectActivedAmount;
+    address public override feeReceiver;
 
     function initialize(address _project, uint256 _price) public initializer {
         __Ownable_init();
@@ -30,6 +32,10 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
     function applyIoIDs(uint256 _projectId, uint256 _amount) external payable override {
         require(IProject(project).projectType(_projectId) == 0, "only hardware project");
         require(msg.value >= _amount * price, "insufficient fund");
+        if (feeReceiver != address(0)) {
+            (bool success, ) = feeReceiver.call{value: msg.value}("");
+            require(success, "collect fee fail");
+        }
         unchecked {
             projectAppliedAmount[_projectId] += _amount;
         }
@@ -60,6 +66,10 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
             require(projectAppliedAmount[_projectId] > projectActivedAmount[_projectId], "insufficient ioID");
         } else {
             require(msg.value >= price, "insufficient fund");
+            if (feeReceiver != address(0)) {
+                (bool success, ) = feeReceiver.call{value: msg.value}("");
+                require(success, "collect fee fail");
+            }
             unchecked {
                 projectAppliedAmount[_projectId] += 1;
             }
@@ -76,7 +86,14 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
         emit ChangePrice(_price);
     }
 
+    function changeFeeReceiver(address _feeReceiver) external onlyOwner {
+        require(_feeReceiver != address(0), "zero address");
+        feeReceiver = _feeReceiver;
+        emit ChangeFeeReceiver(_feeReceiver);
+    }
+
     function setIoIDRegistry(address _ioIDRegistry) public onlyOwner {
+        require(_ioIDRegistry != address(0), "zero address");
         ioIDRegistry = _ioIDRegistry;
         emit SetIoIDRegistry(_ioIDRegistry);
     }
