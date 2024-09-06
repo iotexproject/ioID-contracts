@@ -14,6 +14,7 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
     event CreateIoID(address indexed owner, uint256 id, address wallet, string did);
     event SetMinter(address indexed minter);
     event RemoveDIDWallet(address indexed wallet, string did);
+    event SetResolver(uint256 id, address indexed resolver);
 
     uint256 nextId;
     address public minter;
@@ -26,6 +27,7 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
     mapping(address => uint256) public override deviceProject;
     mapping(uint256 => uint256) public override projectDeviceCount;
     mapping(uint256 => mapping(address => address)) _projectIDs;
+    mapping(uint256 => address) _resolvers;
 
     function initialize(
         address _minter,
@@ -117,5 +119,15 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
 
     function did(address _device) public view override returns (string memory) {
         return IioIDRegistry(minter).documentID(_device);
+    }
+
+    function setResolver(uint256 _id, address _resolver) external override {
+        require(ownerOf(_id) == msg.sender, "not ioID owner");
+        _resolvers[_id] = _resolver;
+        emit SetResolver(_id, _resolver);
+    }
+
+    function resolver(uint256 _id) external view override returns (address) {
+        return _resolvers[_id];
     }
 }

@@ -19,4 +19,8 @@ interface IioID {
     function mint(uint256 _projectId, address _device, address _owner) external returns (uint256);
 
     function removeDID(address _device) external;
+
+    function setResolver(uint256 _id, address _resolver) external;
+
+    function resolver(uint256 _id) external view returns (address);
 }
