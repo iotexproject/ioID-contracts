@@ -123,6 +123,7 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
 
     function setResolver(uint256 _id, address _resolver) external override {
         require(ownerOf(_id) == msg.sender, "not ioID owner");
+        require(_resolver != address(0), "zero address");
         _resolvers[_id] = _resolver;
         emit SetResolver(_id, _resolver);
     }
