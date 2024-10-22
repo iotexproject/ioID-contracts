@@ -14,7 +14,6 @@ import "../interfaces/IioIDStore.sol";
 import "../interfaces/IioIDRegistry.sol";
 
 interface IDeviceNFT {
-    function weight(uint256 tokenId) external view returns (uint256);
     function owner() external view returns (address);
 
     function initialize(string memory _name, string memory _symbol) external;

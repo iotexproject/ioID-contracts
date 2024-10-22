@@ -2,6 +2,7 @@ import * as dotenv from 'dotenv';
 import { HardhatUserConfig } from 'hardhat/config';
 import '@nomicfoundation/hardhat-toolbox';
 import '@openzeppelin/hardhat-upgrades';
+import '@nomiclabs/hardhat-truffle5';
 
 dotenv.config();
 
