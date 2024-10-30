@@ -16,7 +16,7 @@ contract DeviceNFT is ERC721Upgradeable, OwnableUpgradeable {
     uint256 public total;
 
     function initialize(string memory _name, string memory _symbol) external initializer {
-        __Ownable_init(msg.sender);
+        __Ownable_init();
         __ERC721_init(_name, _symbol);
         uri = "";
     }
