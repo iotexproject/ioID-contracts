@@ -8,7 +8,7 @@ contract DeviceNFT is ERC721Upgradeable, OwnableUpgradeable {
     event MinterConfigured(address indexed minter, uint256 minterAllowedAmount);
     event MinterRemoved(address indexed minter);
     event MinterAllowanceIncremented(address indexed owner, address indexed minter, uint256 allowanceIncrement);
-    event SetBastURI(string uri);
+    event SetBaseURI(string uri);
 
     mapping(address => bool) internal minters;
     mapping(address => uint256) internal minterAllowed;
@@ -65,7 +65,7 @@ contract DeviceNFT is ERC721Upgradeable, OwnableUpgradeable {
 
     function setBaseURI(string calldata _uri) external onlyOwner {
         uri = _uri;
-        emit SetBastURI(_uri);
+        emit SetBaseURI(_uri);
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
