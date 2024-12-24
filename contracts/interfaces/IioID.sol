@@ -20,7 +20,7 @@ interface IioID {
 
     function removeDID(address _device) external;
 
-    function migrate(uint256 _tokenId, address _owner) external;
+    function migrate(uint256 _id, address _owner) external;
 
     function setResolver(uint256 _id, address _resolver) external;
 
