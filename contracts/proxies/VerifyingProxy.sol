@@ -129,7 +129,6 @@ contract VerifyingProxy is OwnableUpgradeable, ERC721Holder {
     }
 
     function applyIoIDs(uint256 _amount) external payable onlyOwner {
-        require(0 == IProjectRegistry(projectRegistry).project().projectType(projectId), "only hardware project");
         deviceNFT.incrementMinterAllowance(address(this), _amount);
         IioIDStore(ioIDStore).applyIoIDs{value: msg.value}(projectId, _amount);
     }

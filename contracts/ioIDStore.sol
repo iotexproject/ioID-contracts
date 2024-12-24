@@ -62,21 +62,22 @@ contract ioIDStore is IioIDStore, OwnableUpgradeable {
 
     function activeIoID(uint256 _projectId) external payable override {
         require(ioIDRegistry == msg.sender, "only ioIDRegistry");
-        if (IProject(project).projectType(_projectId) == 0) {
-            require(projectAppliedAmount[_projectId] > projectActivedAmount[_projectId], "insufficient ioID");
-        } else {
+
+        uint256 _projectAppliedAmount = projectAppliedAmount[_projectId];
+        uint256 _projectActivedAmount = projectActivedAmount[_projectId];
+        if (_projectAppliedAmount == _projectActivedAmount) {
             require(msg.value >= price, "insufficient fund");
             if (feeReceiver != address(0)) {
                 (bool success, ) = feeReceiver.call{value: msg.value}("");
                 require(success, "collect fee fail");
             }
             unchecked {
-                projectAppliedAmount[_projectId] += 1;
+                projectAppliedAmount[_projectId] = _projectAppliedAmount + 1;
             }
         }
 
         unchecked {
-            projectActivedAmount[_projectId] += 1;
+            projectActivedAmount[_projectId] = _projectActivedAmount + 1;
         }
         emit ActiveIoID(_projectId);
     }
