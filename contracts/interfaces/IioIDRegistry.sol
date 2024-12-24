@@ -30,4 +30,6 @@ interface IioIDRegistry {
         bytes32 r,
         bytes32 s
     ) external payable;
+
+    function migrate(address device, address user, uint8 v, bytes32 r, bytes32 s) external;
 }

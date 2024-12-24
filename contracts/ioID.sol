@@ -15,6 +15,7 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
     event SetMinter(address indexed minter);
     event RemoveDIDWallet(address indexed wallet, string did);
     event SetResolver(uint256 id, address indexed resolver);
+    event Migrate(address indexed oldOwner, address indexed newOwner, uint256 id);
 
     uint256 nextId;
     address public minter;
@@ -67,6 +68,15 @@ contract ioID is IioID, ERC721EnumerableUpgradeable {
 
     function mint(uint256 _projectId, address _device, address _owner) external override returns (uint256) {
         return _mint(_projectId, _device, _owner);
+    }
+
+    function migrate(uint256 _id, address _owner) external override {
+        require(minter == msg.sender, "invalid minter");
+
+        address _oldOwner = ownerOf(_id);
+        _safeTransfer(_oldOwner, _owner, _id, "");
+
+        emit Migrate(_oldOwner, _owner, _id);
     }
 
     function _mint(uint256 _projectId, address _device, address _owner) internal returns (uint256 id_) {

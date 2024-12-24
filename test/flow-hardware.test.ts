@@ -9,6 +9,7 @@ import { DeviceNFT } from '../typechain-types/contracts/DeviceNFT.sol';
 describe('ioID pebble tests', function () {
   let deployer: HardhatEthersSigner;
   let owner: HardhatEthersSigner;
+  let newOwner: HardhatEthersSigner;
   let user: HardhatEthersSigner;
   let chainId: number;
   let verifier: Signer;
@@ -20,7 +21,7 @@ describe('ioID pebble tests', function () {
   let deviceGauge: DummyDeviceGauge;
 
   before(async () => {
-    [deployer, owner, user] = await ethers.getSigners();
+    [deployer, owner, user, newOwner] = await ethers.getSigners();
 
     verifier = ethers.Wallet.createRandom();
 
@@ -139,6 +140,18 @@ describe('ioID pebble tests', function () {
     const wallet = await ioID['wallet(string)'](did);
     expect((await ethers.provider.getCode(wallet)).length).to.gt(0);
 
+    const migrateNonce = await ioIDRegistry.nonces(device.address);
+    // @ts-ignore
+    const migrateSignature = await device.signTypedData(domain, types, {
+      owner: newOwner.address,
+      nonce: migrateNonce,
+    });
+    const migrateR = migrateSignature.substring(0, 66);
+    const migrateS = '0x' + migrateSignature.substring(66, 130);
+    const migrateV = '0x' + migrateSignature.substring(130);
+    await ioIDRegistry.migrate(device.address, newOwner.address, migrateV, migrateR, migrateS);
+    expect(await ioID.ownerOf(1)).to.equal(newOwner.address);
+
     expect(await ethers.provider.getBalance(wallet)).to.equal(0);
     // @ts-ignore
     await deployer.sendTransaction({
@@ -169,7 +182,7 @@ describe('ioID pebble tests', function () {
       },
       // registryAddress: '0x000000006551c19487814612e58FE06813775758',
       // implementationAddress: '0x1d1C779932271e9Dc683d5373E84Fa4239F2b3fb',
-      signer: owner,
+      signer: newOwner,
     });
     const executedCall = await tokenboundClient.transferETH({
       account: wallet,

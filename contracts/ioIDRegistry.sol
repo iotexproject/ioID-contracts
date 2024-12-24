@@ -17,6 +17,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
     event UpdateDevice(address indexed device, address owner, bytes32 hash, string uri);
     event RemoveDevice(address indexed device, address owner);
     event SetIoIdStore(address indexed store);
+    event Migrate(address indexed device, address owner);
 
     bytes32 public constant EIP712DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -90,6 +91,7 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         bytes32 s
     ) public payable override {
         require(device != address(0), "device is the zero address");
+        require(user != address(0), "user is the zero address");
         require(!registeredNFT[deviceContract][tokenId], "nft already used");
         require(records[device].hash == bytes32(0), "device exists");
 
@@ -117,6 +119,20 @@ contract ioIDRegistry is IioIDRegistry, Initializable {
         ids[device] = _id;
         registeredNFT[deviceContract][tokenId] = true;
         emit NewDevice(device, user, hash, uri);
+    }
+
+    function migrate(address device, address user, uint8 v, bytes32 r, bytes32 s) external deviceExists(device) {
+        require(user != address(0), "user is the zero address");
+        bytes32 digest = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                DOMAIN_SEPARATOR,
+                keccak256(abi.encode(PERMIT_TYPE_HASH, user, _useNonce(device)))
+            )
+        );
+        require(ecrecover(digest, v, r, s) == device, "invalid signature");
+
+        IioID(ioID).migrate(ids[device], user);
     }
 
     function update(
