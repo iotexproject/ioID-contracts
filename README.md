@@ -29,6 +29,7 @@ ioIDRegistry deployed to 0x0A7e595C7889dF3652A19aF52C18377bF17e027D
 
 ```
 UniversalFactory deployed to 0x22E55A58BC88E6f2712dD4fbF5ef7EC153845bcC
+UniversalFactoryV2 deployed to 0x114627A664A3DE77921B6b76a06c5290222CC428
 ```
 
 ### IoTeX Mainnet
