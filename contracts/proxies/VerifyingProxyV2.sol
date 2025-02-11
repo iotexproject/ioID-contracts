@@ -210,53 +210,14 @@ contract VerifyingProxyV2 is OwnableUpgradeable, ERC721Holder {
         (address _walletAddr, ) = IioID(_ioIDRegistry.ioID()).wallet(_ioIDTokenId);
         IERC6551Executable _wallet = IERC6551Executable(_walletAddr);
 
-        _wallet.execute(
-            address(deviceNFT),
-            0,
-            abi.encodeCall(SafeTransferERC721.safeTransferFrom, (address(_wallet), _owner, _tokenId)),
-            0
-        );
-
-        IERC721(_ioIDRegistry.ioID()).safeTransferFrom(address(this), _owner, _ioIDTokenId);
-
-        emit Registered(_owner, _device, _tokenId, _ioIDTokenId);
-    }
-
-    function registerAndStaking(
-        bytes calldata _verifySignature,
-        bytes32 _hash,
-        string calldata _uri,
-        address _owner,
-        address _device,
-        uint8 _v,
-        bytes32 _r,
-        bytes32 _s
-    ) external payable {
-        bytes memory verifyMessage = abi.encodePacked(block.chainid, _owner, _device);
-        bytes32 verifyHash = verifyMessage.toEthSignedMessageHash();
-        require(verifyHash.recover(_verifySignature) == verifier, "invalid verifier signature");
-
-        uint256 _tokenId = deviceNFT.mint(address(this));
-
-        IioIDRegistry _ioIDRegistry = IioIDRegistry(IioIDStore(ioIDStore).ioIDRegistry());
-        _ioIDRegistry.register{value: msg.value}(
-            address(deviceNFT),
-            _tokenId,
-            address(this),
-            _device,
-            _hash,
-            _uri,
-            _v,
-            _r,
-            _s
-        );
-
-        uint256 _ioIDTokenId = _ioIDRegistry.deviceTokenId(_device);
-
-        if (deviceGauge != address(0)) {
-            (address _walletAddr, ) = IioID(_ioIDRegistry.ioID()).wallet(_ioIDTokenId);
-            IERC6551Executable _wallet = IERC6551Executable(_walletAddr);
-
+        if (deviceGauge == address(0)) {
+            _wallet.execute(
+                address(deviceNFT),
+                0,
+                abi.encodeCall(SafeTransferERC721.safeTransferFrom, (address(_wallet), _owner, _tokenId)),
+                0
+            );
+        } else {
             _wallet.execute(address(deviceNFT), 0, abi.encodeCall(IERC721.approve, (deviceGauge, _tokenId)), 0);
             _wallet.execute(deviceGauge, 0, abi.encodeCall(IDeviceGauge.deposit, (_tokenId, _owner)), 0);
         }
