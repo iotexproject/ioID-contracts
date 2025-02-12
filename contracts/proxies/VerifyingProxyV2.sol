@@ -7,6 +7,7 @@ import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {MulticallUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/MulticallUpgradeable.sol";
 
 import "../interfaces/IProject.sol";
 import "../interfaces/IioID.sol";
@@ -44,7 +45,7 @@ interface IDeviceGauge {
     function deposit(uint256 _tokenId, address _recipient) external;
 }
 
-contract VerifyingProxyV2 is OwnableUpgradeable, ERC721Holder {
+contract VerifyingProxyV2 is MulticallUpgradeable, OwnableUpgradeable, ERC721Holder {
     using ECDSA for bytes32;
     using ECDSA for bytes;
     using Clones for address;
